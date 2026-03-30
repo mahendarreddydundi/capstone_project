@@ -8,7 +8,44 @@ const app = express()
 
 app.use(bodyParser.json())
 
+function isValidRequestBody(body){
+
+    if(!body || typeof body !== "object"){
+        return false
+    }
+
+    const { device_id, message, timestamp, hmac } = body
+
+    if(typeof device_id !== "string" || device_id.length === 0){
+        return false
+    }
+
+    if(typeof message !== "string" || message.length === 0){
+        return false
+    }
+
+    const parsedTimestamp = Number(timestamp)
+
+    if(!Number.isInteger(parsedTimestamp)){
+        return false
+    }
+
+    if(typeof hmac !== "string" || !/^[a-f0-9]{64}$/i.test(hmac)){
+        return false
+    }
+
+    return true
+
+}
+
 app.post("/auth", (req, res) => {
+
+    if(!isValidRequestBody(req.body)){
+        return res.status(400).json({
+            status:"FAILED",
+            message:"Invalid request body"
+        })
+    }
 
     const { device_id, message, timestamp, hmac } = req.body
 
@@ -55,8 +92,10 @@ app.post("/auth", (req, res) => {
 
 })
 
-app.listen(3000, () => {
+if(require.main === module){
+    app.listen(3000, () => {
+        console.log("Gateway running on port 3000")
+    })
+}
 
-    console.log("Gateway running on port 3000")
-
-})
+module.exports = app

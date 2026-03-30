@@ -2,12 +2,7 @@ import requests
 
 from puf import SRAMPUF
 from hmac_auth import HMACAuth
-
-DEVICE_ID = "iot_device_01"
-
-MESSAGE = "device_authentication"
-
-GATEWAY_URL = "http://localhost:3000/auth"
+from config import DEVICE_ID, MESSAGE, GATEWAY_URL
 
 
 class IoTDevice:
@@ -31,9 +26,11 @@ class IoTDevice:
             "hmac": signature
         }
 
-        response = requests.post(GATEWAY_URL, json=payload)
-
-        print("Server Response:", response.text)
+        try:
+            response = requests.post(GATEWAY_URL, json=payload, timeout=10)
+            print("Server Response:", response.text)
+        except requests.RequestException as err:
+            print("Authentication request failed:", err)
 
 
 if __name__ == "__main__":

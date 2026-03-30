@@ -22,7 +22,13 @@ function verifyAuthentication(data){
         .update(payload)
         .digest("hex")
 
-    if(calculated === hmac){
+    const calculatedBuffer = Buffer.from(calculated, "hex")
+    const receivedBuffer = Buffer.from(hmac, "hex")
+
+    if(
+        calculatedBuffer.length === receivedBuffer.length &&
+        crypto.timingSafeEqual(calculatedBuffer, receivedBuffer)
+    ){
 
         return { success:true }
 
