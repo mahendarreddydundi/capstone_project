@@ -1,14 +1,14 @@
-const registeredDevices = {
-
-    "iot_device_01": true,
-    "iot_device_02": true
-
-}
+const allowedDeviceIds = new Set([
+    "iot_device_01",
+    "iot_device_02"
+])
 
 function isRegistered(deviceId){
+    if(typeof deviceId !== "string" || deviceId.length === 0){
+        return false
+    }
 
-    return registeredDevices[deviceId] === true
-
+    return allowedDeviceIds.has(deviceId)
 }
 
 module.exports = { isRegistered }

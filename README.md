@@ -48,6 +48,12 @@ Gateway endpoint:
 python device/device_client.py
 ```
 
+To demonstrate both valid and invalid/attack scenarios (recommended for capstone evidence):
+
+```bash
+python device/device_client.py --demo-cases
+```
+
 On Windows PowerShell, do not run the script name directly (for example, `device_client.py`).
 Use Python explicitly:
 
@@ -65,6 +71,14 @@ Expected behavior:
 
 - If the device is registered and token is valid, gateway responds with `SUCCESS`.
 - If the device is unknown, replayed, or tampered, gateway responds with `FAILED`.
+
+When running `--demo-cases`, you should see mixed outcomes, for example:
+
+- `VALID_CASE` -> `SUCCESS`
+- `REPLAY_ATTACK` -> `FAILED` (`Replay attack detected`)
+- `INVALID_HMAC` -> `FAILED` (`Authentication failed`)
+- `UNREGISTERED_DEVICE` -> `FAILED` (`Device not registered`)
+- `INVALID_PAYLOAD` -> `FAILED` (`Invalid request body`)
 
 ## Run Tests
 

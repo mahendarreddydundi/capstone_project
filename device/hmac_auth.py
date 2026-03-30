@@ -1,6 +1,7 @@
 import hmac
 import hashlib
 import time
+import secrets
 
 class HMACAuth:
 
@@ -10,8 +11,9 @@ class HMACAuth:
     def generate_auth_token(self, message):
 
         timestamp = str(int(time.time()))
+        nonce = secrets.token_hex(16)
 
-        payload = message + timestamp
+        payload = message + timestamp + nonce
 
         signature = hmac.new(
             self.secret,
@@ -19,4 +21,4 @@ class HMACAuth:
             hashlib.sha256
         ).hexdigest()
 
-        return signature, timestamp
+        return signature, timestamp, nonce

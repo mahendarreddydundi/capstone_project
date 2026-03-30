@@ -11,11 +11,11 @@ function deriveSecret(deviceId){
 
 function verifyAuthentication(data){
 
-    const { device_id, message, timestamp, hmac } = data
+    const { device_id, message, timestamp, nonce, hmac } = data
 
     const secret = deriveSecret(device_id)
 
-    const payload = message + timestamp
+    const payload = message + timestamp + nonce
 
     const calculated = crypto
         .createHmac("sha256", secret)
