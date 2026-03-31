@@ -3,6 +3,7 @@ const bodyParser = require("body-parser")
 
 const { verifyAuthentication } = require("./authService")
 const { isRegistered } = require("./deviceRegistry")
+const { logAuthSuccessToBlockchain } = require("./blockchainLogger")
 
 const app = express()
 
@@ -138,6 +139,24 @@ app.post("/auth", (req, res) => {
     if(result.success){
 
         logAuthAttempt(device_id, timestamp, "SUCCESS")
+
+        // Best-effort blockchain logging; keep auth availability independent.
+        logAuthSuccessToBlockchain({ deviceId:device_id, timestamp })
+            .then((logResult) => {
+                if(logResult.ok){
+                    console.log(`[BLOCKCHAIN_LOG] status=SUCCESS asset_id=${logResult.assetId}`)
+                    return
+                }
+
+                if(!logResult.skipped){
+                    console.warn(
+                        `[BLOCKCHAIN_LOG] status=FAILED asset_id=${logResult.assetId || "na"} error=${logResult.error || "unknown"}`
+                    )
+                }
+            })
+            .catch((error) => {
+                console.warn(`[BLOCKCHAIN_LOG] status=FAILED error=${error.message}`)
+            })
 
         return res.json({
             status:"SUCCESS",

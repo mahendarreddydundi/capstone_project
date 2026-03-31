@@ -4,7 +4,9 @@
   "main": "gateway/server.js",
   "scripts": {
     "start": "node gateway/server.js",
-    "test": "node --test gateway/server.test.js"
+    "test": "node --test gateway/server.test.js",
+    "fabric:iot:flow": "./run_iot_blockchain_flow.sh",
+    "fabric:ops": "./fabric-samples-net/test-network/fabric_iot_ops.sh"
   },
   "keywords": [],
   "author": "",
