@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SAMPLES_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 NETWORK_SCRIPT="${SCRIPT_DIR}/network.sh"
 CC_NAME="basic"
-CC_PATH="../asset-transfer-basic/chaincode-go"
+CC_PATH="../asset-transfer-auth/chaincode-go"
 CHANNEL="mychannel"
 
 usage() {
@@ -15,7 +15,7 @@ Usage: ./fabric_iot_ops.sh <command>
 Commands:
   prereqs     Install Fabric binaries/images if missing
   up          Start network + create channel
-  deploy      Deploy basic Go chaincode
+  deploy      Deploy authentication Go chaincode (asset-transfer-auth)
   restart     Restart network and redeploy chaincode
   status      Show running Fabric containers
   channel     Verify mychannel and peer join info

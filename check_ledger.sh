@@ -3,7 +3,31 @@
 
 set -e
 
-cd /workspaces/capstone_project/fabric-samples-net/test-network
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="${SCRIPT_DIR}"
+TEST_NETWORK_DIR="${PROJECT_ROOT}/fabric-samples-net/test-network"
+SAMPLES_DIR="${PROJECT_ROOT}/fabric-samples-net"
+
+if [[ ! -d "${TEST_NETWORK_DIR}" ]]; then
+    echo "Error: test-network directory not found at ${TEST_NETWORK_DIR}"
+    exit 1
+fi
+
+# Ensure peer binary and Fabric config are available in fresh terminals.
+export PATH="${PATH}:${SAMPLES_DIR}/bin"
+export FABRIC_CFG_PATH="${SAMPLES_DIR}/config"
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_LOCALMSPID=Org1MSP
+export CORE_PEER_TLS_ROOTCERT_FILE="${TEST_NETWORK_DIR}/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"
+export CORE_PEER_MSPCONFIGPATH="${TEST_NETWORK_DIR}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp"
+export CORE_PEER_ADDRESS=localhost:7051
+
+if ! command -v peer >/dev/null 2>&1; then
+    echo "Error: peer command not found. Run 'npm run fabric:ops -- prereqs' first."
+    exit 1
+fi
+
+cd "${TEST_NETWORK_DIR}"
 
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║     BLOCKCHAIN LEDGER INSPECTION TOOL                  ║"

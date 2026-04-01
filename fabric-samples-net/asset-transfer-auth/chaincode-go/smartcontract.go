@@ -20,37 +20,137 @@ type SmartContract struct {
 
 // Device represents a registered IoT device
 type Device struct {
-	DeviceID      string `json:"device_id"`
-	PublicKey     string `json:"public_key"`
-	Registered    bool   `json:"registered"`
-	RegistrationTime int64 `json:"registration_time"`
-	Active        bool   `json:"active"`
-	LastAuthTime  int64  `json:"last_auth_time"`
+	DeviceID         string `json:"device_id"`
+	PublicKey        string `json:"public_key"`
+	Registered       bool   `json:"registered"`
+	RegistrationTime int64  `json:"registration_time"`
+	Active           bool   `json:"active"`
+	LastAuthTime     int64  `json:"last_auth_time"`
 }
 
 // AuthEvent represents a successful authentication event
 type AuthEvent struct {
-	EventID       string `json:"event_id"`
-	DeviceID      string `json:"device_id"`
-	Timestamp     int64  `json:"timestamp"`
-	MessageHash   string `json:"message_hash"`
-	Status        string `json:"status"` // SUCCESS, REPLAY, FAILED
-	Nonce         string `json:"nonce"`
+	EventID     string `json:"event_id"`
+	DeviceID    string `json:"device_id"`
+	Timestamp   int64  `json:"timestamp"`
+	MessageHash string `json:"message_hash"`
+	Status      string `json:"status"` // SUCCESS, REPLAY, FAILED
+	Nonce       string `json:"nonce"`
 }
 
 // NonceRecord prevents replay attacks
 type NonceRecord struct {
-	Nonce      string `json:"nonce"`
-	DeviceID   string `json:"device_id"`
-	Timestamp  int64  `json:"timestamp"`
-	Expiry     int64  `json:"expiry"` // 60 second replay window
+	Nonce     string `json:"nonce"`
+	DeviceID  string `json:"device_id"`
+	Timestamp int64  `json:"timestamp"`
+	Expiry    int64  `json:"expiry"` // 60 second replay window
+}
+
+// Asset keeps compatibility with asset-transfer-basic flows used by scripts/checkers.
+type Asset struct {
+	ID             string `json:"ID"`
+	Color          string `json:"Color"`
+	Size           int    `json:"Size"`
+	Owner          string `json:"Owner"`
+	AppraisedValue int    `json:"AppraisedValue"`
 }
 
 const maxReplayWindow = 60 // seconds
 
+// InitLedger seeds demo assets for compatibility with existing test flow.
+func (s *SmartContract) InitLedger(ctx contractapi.TransactionContextInterface) error {
+	assets := []Asset{
+		{ID: "asset1", Color: "blue", Size: 5, Owner: "Tomoko", AppraisedValue: 300},
+		{ID: "asset2", Color: "red", Size: 5, Owner: "Brad", AppraisedValue: 400},
+		{ID: "asset3", Color: "green", Size: 10, Owner: "Jin Soo", AppraisedValue: 500},
+		{ID: "asset4", Color: "yellow", Size: 10, Owner: "Max", AppraisedValue: 600},
+		{ID: "asset5", Color: "black", Size: 15, Owner: "Adriana", AppraisedValue: 700},
+		{ID: "asset6", Color: "white", Size: 15, Owner: "Michel", AppraisedValue: 800},
+	}
+
+	for _, asset := range assets {
+		assetJSON, err := json.Marshal(asset)
+		if err != nil {
+			return err
+		}
+
+		if err := ctx.GetStub().PutState(asset.ID, assetJSON); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// CreateAsset creates or updates an asset record.
+func (s *SmartContract) CreateAsset(ctx contractapi.TransactionContextInterface, id string, color string, size int, owner string, appraisedValue int) error {
+	asset := Asset{
+		ID:             id,
+		Color:          color,
+		Size:           size,
+		Owner:          owner,
+		AppraisedValue: appraisedValue,
+	}
+
+	assetJSON, err := json.Marshal(asset)
+	if err != nil {
+		return err
+	}
+
+	return ctx.GetStub().PutState(id, assetJSON)
+}
+
+// ReadAsset returns a single asset by ID.
+func (s *SmartContract) ReadAsset(ctx contractapi.TransactionContextInterface, id string) (*Asset, error) {
+	assetJSON, err := ctx.GetStub().GetState(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read from world state: %v", err)
+	}
+	if assetJSON == nil {
+		return nil, fmt.Errorf("the asset %s does not exist", id)
+	}
+
+	var asset Asset
+	if err := json.Unmarshal(assetJSON, &asset); err != nil {
+		return nil, err
+	}
+
+	return &asset, nil
+}
+
+// GetAllAssets returns all key/value states that decode as Asset.
+func (s *SmartContract) GetAllAssets(ctx contractapi.TransactionContextInterface) ([]*Asset, error) {
+	resultsIterator, err := ctx.GetStub().GetStateByRange("", "")
+	if err != nil {
+		return nil, err
+	}
+	defer resultsIterator.Close()
+
+	var assets []*Asset
+	for resultsIterator.HasNext() {
+		queryResponse, err := resultsIterator.Next()
+		if err != nil {
+			return nil, err
+		}
+
+		var asset Asset
+		if err := json.Unmarshal(queryResponse.Value, &asset); err != nil {
+			continue
+		}
+
+		if asset.ID == "" {
+			continue
+		}
+
+		assets = append(assets, &asset)
+	}
+
+	return assets, nil
+}
+
 // RegisterDevice registers a new IoT device
 func (s *SmartContract) RegisterDevice(ctx contractapi.TransactionContextInterface, deviceID string, publicKey string) error {
-	
+
 	existing, err := ctx.GetStub().GetState(deviceID)
 	if err != nil {
 		return fmt.Errorf("error checking existing device: %v", err)
@@ -60,12 +160,12 @@ func (s *SmartContract) RegisterDevice(ctx contractapi.TransactionContextInterfa
 	}
 
 	device := Device{
-		DeviceID:      deviceID,
-		PublicKey:     publicKey,
-		Registered:    true,
+		DeviceID:         deviceID,
+		PublicKey:        publicKey,
+		Registered:       true,
 		RegistrationTime: time.Now().Unix(),
-		Active:        true,
-		LastAuthTime:  0,
+		Active:           true,
+		LastAuthTime:     0,
 	}
 
 	deviceBytes, err := json.Marshal(device)
@@ -89,7 +189,7 @@ func (s *SmartContract) RegisterDevice(ctx contractapi.TransactionContextInterfa
 
 // VerifyAuthentication verifies IoT device authentication using HMAC-SHA256
 func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextInterface, deviceID string, message string, timestamp string, nonce string, hmacSignature string) error {
-	
+
 	// 1. Check device exists and is active
 	deviceBytes, err := ctx.GetStub().GetState(deviceID)
 	if err != nil {
@@ -97,11 +197,11 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 	}
 	if deviceBytes == nil {
 		eventBytes, _ := json.Marshal(AuthEvent{
-			EventID: fmt.Sprintf("auth-fail-%s-%d", deviceID, time.Now().Unix()),
-			DeviceID: deviceID,
+			EventID:   fmt.Sprintf("auth-fail-%s-%d", deviceID, time.Now().Unix()),
+			DeviceID:  deviceID,
 			Timestamp: time.Now().Unix(),
-			Status: "FAILED",
-			Nonce: nonce,
+			Status:    "FAILED",
+			Nonce:     nonce,
 		})
 		ctx.GetStub().SetEvent("AuthenticationFailed", eventBytes)
 		return fmt.Errorf("device %s not registered", deviceID)
@@ -126,11 +226,11 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 	now := time.Now().Unix()
 	if now-ts > maxReplayWindow || ts-now > maxReplayWindow {
 		eventBytes, _ := json.Marshal(AuthEvent{
-			EventID: fmt.Sprintf("auth-stale-%s-%d", deviceID, now),
-			DeviceID: deviceID,
+			EventID:   fmt.Sprintf("auth-stale-%s-%d", deviceID, now),
+			DeviceID:  deviceID,
 			Timestamp: now,
-			Status: "FAILED",
-			Nonce: nonce,
+			Status:    "FAILED",
+			Nonce:     nonce,
 		})
 		ctx.GetStub().SetEvent("AuthenticationFailed", eventBytes)
 		return fmt.Errorf("timestamp outside valid window")
@@ -145,11 +245,11 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 
 	if existingNonce != nil {
 		eventBytes, _ := json.Marshal(AuthEvent{
-			EventID: fmt.Sprintf("auth-replay-%s-%d", deviceID, now),
-			DeviceID: deviceID,
+			EventID:   fmt.Sprintf("auth-replay-%s-%d", deviceID, now),
+			DeviceID:  deviceID,
 			Timestamp: now,
-			Status: "REPLAY",
-			Nonce: nonce,
+			Status:    "REPLAY",
+			Nonce:     nonce,
 		})
 		ctx.GetStub().SetEvent("ReplayAttackDetected", eventBytes)
 		return fmt.Errorf("nonce replay detected for device %s", deviceID)
@@ -161,11 +261,11 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 
 	if expectedHMAC != hmacSignature {
 		eventBytes, _ := json.Marshal(AuthEvent{
-			EventID: fmt.Sprintf("auth-hmac-fail-%s-%d", deviceID, now),
-			DeviceID: deviceID,
+			EventID:   fmt.Sprintf("auth-hmac-fail-%s-%d", deviceID, now),
+			DeviceID:  deviceID,
 			Timestamp: now,
-			Status: "FAILED",
-			Nonce: nonce,
+			Status:    "FAILED",
+			Nonce:     nonce,
 		})
 		ctx.GetStub().SetEvent("AuthenticationFailed", eventBytes)
 		return fmt.Errorf("HMAC verification failed for device %s", deviceID)
@@ -173,10 +273,10 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 
 	// 5. Record nonce to prevent replay
 	nonceRecord := NonceRecord{
-		Nonce: nonce,
-		DeviceID: deviceID,
+		Nonce:     nonce,
+		DeviceID:  deviceID,
 		Timestamp: ts,
-		Expiry: ts + maxReplayWindow,
+		Expiry:    ts + maxReplayWindow,
 	}
 
 	nonceBytes, err := json.Marshal(nonceRecord)
@@ -203,12 +303,12 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 
 	// 7. Log successful authentication
 	authEvent := AuthEvent{
-		EventID: fmt.Sprintf("auth-success-%s-%d", deviceID, now),
-		DeviceID: deviceID,
-		Timestamp: now,
+		EventID:     fmt.Sprintf("auth-success-%s-%d", deviceID, now),
+		DeviceID:    deviceID,
+		Timestamp:   now,
 		MessageHash: calculateSHA256(payload),
-		Status: "SUCCESS",
-		Nonce: nonce,
+		Status:      "SUCCESS",
+		Nonce:       nonce,
 	}
 
 	authBytes, err := json.Marshal(authEvent)
@@ -231,7 +331,7 @@ func (s *SmartContract) VerifyAuthentication(ctx contractapi.TransactionContextI
 
 // RevokeDevice deactivates a device
 func (s *SmartContract) RevokeDevice(ctx contractapi.TransactionContextInterface, deviceID string) error {
-	
+
 	deviceBytes, err := ctx.GetStub().GetState(deviceID)
 	if err != nil {
 		return fmt.Errorf("error retrieving device: %v", err)
@@ -262,7 +362,7 @@ func (s *SmartContract) RevokeDevice(ctx contractapi.TransactionContextInterface
 
 // GetDevice retrieves device information
 func (s *SmartContract) GetDevice(ctx contractapi.TransactionContextInterface, deviceID string) (*Device, error) {
-	
+
 	deviceBytes, err := ctx.GetStub().GetState(deviceID)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving device: %v", err)
@@ -282,10 +382,10 @@ func (s *SmartContract) GetDevice(ctx contractapi.TransactionContextInterface, d
 
 // GetAuthEvents retrieves all authentication events for a device
 func (s *SmartContract) GetAuthEvents(ctx contractapi.TransactionContextInterface, deviceID string) ([]*AuthEvent, error) {
-	
+
 	queryString := fmt.Sprintf(`{"selector":{"device_id":"%s","event_id":{"$regex":"auth-"}}}`, deviceID)
-	
-	resultsIterator, err := ctx.GetStub().GetQueryResultsForQueryString(queryString)
+
+	resultsIterator, err := ctx.GetStub().GetQueryResult(queryString)
 	if err != nil {
 		return nil, fmt.Errorf("error querying auth events: %v", err)
 	}
