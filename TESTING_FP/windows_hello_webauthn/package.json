@@ -1,0 +1,14 @@
+{
+  "name": "windows-hello-webauthn-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Codespace-friendly Windows Hello (fingerprint) auth demo using WebAuthn",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^13.2.1",
+    "express": "^4.21.2"
+  }
+}
