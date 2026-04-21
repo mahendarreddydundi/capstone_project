@@ -5,6 +5,8 @@
   "scripts": {
     "start": "node gateway/server.js",
     "test": "node --test gateway/server.test.js",
+    "benchmark:auth": "node gateway/benchmarkAuth.js",
+    "automate:all": "./scripts/run_full_automation.sh",
     "fabric:iot:flow": "./run_iot_blockchain_flow.sh",
     "fabric:ops": "./fabric-samples-net/test-network/fabric_iot_ops.sh"
   },

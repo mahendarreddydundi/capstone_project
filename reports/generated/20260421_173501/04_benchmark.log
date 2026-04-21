@@ -1,0 +1,22 @@
+
+> capstone-project@1.0.0 benchmark:auth
+> node gateway/benchmarkAuth.js --requests 200 --concurrency 20
+
+Auth benchmark complete
+{
+  "url": "http://localhost:3000/auth",
+  "requests": 200,
+  "concurrency": 20,
+  "totalMs": 438.405708,
+  "throughput": 456.1984398250581,
+  "successCount": 200,
+  "failureCount": 0,
+  "successRate": 100,
+  "p50": 27.588592,
+  "p95": 92.48942,
+  "p99": 102.790238,
+  "max": 144.872001,
+  "byStatus": {
+    "200": 200
+  }
+}

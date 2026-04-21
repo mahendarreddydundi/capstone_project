@@ -1,6 +1,18 @@
 const path = require("path")
 const { execFile } = require("child_process")
 
+function getFabricConfig(){
+    const testNetworkDir = process.env.FABRIC_TEST_NETWORK_DIR
+        ? path.resolve(process.env.FABRIC_TEST_NETWORK_DIR)
+        : path.resolve(__dirname, "../fabric-samples-net/test-network")
+
+    return {
+        testNetworkDir,
+        channelName: process.env.FABRIC_CHANNEL_NAME || "mychannel",
+        chaincodeName: process.env.FABRIC_CHAINCODE_NAME || "basic"
+    }
+}
+
 function buildFabricEnv(testNetworkDir){
     return {
         ...process.env,
@@ -32,9 +44,7 @@ function invokeChaincodeFunction(args, options = {}){
 }
 
 async function registerDeviceOnChain({ deviceId }){
-    const testNetworkDir = process.env.FABRIC_TEST_NETWORK_DIR
-        ? path.resolve(process.env.FABRIC_TEST_NETWORK_DIR)
-        : path.resolve(__dirname, "../../fabric-samples-net/test-network")
+    const { testNetworkDir, channelName, chaincodeName } = getFabricConfig()
 
     const args = [
         "chaincode",
@@ -43,8 +53,8 @@ async function registerDeviceOnChain({ deviceId }){
         "--ordererTLSHostnameOverride", "orderer.example.com",
         "--tls",
         "--cafile", path.resolve(testNetworkDir, "organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"),
-        "-C", "mychannel",
-        "-n", "basic",
+        "-C", channelName,
+        "-n", chaincodeName,
         "--peerAddresses", "localhost:7051",
         "--tlsRootCertFiles", path.resolve(testNetworkDir, "organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
         "--peerAddresses", "localhost:9051",
@@ -74,9 +84,7 @@ async function registerDeviceOnChain({ deviceId }){
 }
 
 async function verifyAuthOnChain({ deviceId, message, timestamp, nonce, hmac }){
-    const testNetworkDir = process.env.FABRIC_TEST_NETWORK_DIR
-        ? path.resolve(process.env.FABRIC_TEST_NETWORK_DIR)
-        : path.resolve(__dirname, "../../fabric-samples-net/test-network")
+    const { testNetworkDir, channelName, chaincodeName } = getFabricConfig()
 
     const args = [
         "chaincode",
@@ -85,8 +93,8 @@ async function verifyAuthOnChain({ deviceId, message, timestamp, nonce, hmac }){
         "--ordererTLSHostnameOverride", "orderer.example.com",
         "--tls",
         "--cafile", path.resolve(testNetworkDir, "organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem"),
-        "-C", "mychannel",
-        "-n", "basic",
+        "-C", channelName,
+        "-n", chaincodeName,
         "--peerAddresses", "localhost:7051",
         "--tlsRootCertFiles", path.resolve(testNetworkDir, "organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"),
         "--peerAddresses", "localhost:9051",

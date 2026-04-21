@@ -1,0 +1,25 @@
+
+> capstone-project@1.0.0 test
+> node --test gateway/server.test.js
+
+[AUTH_ATTEMPT] device_id=iot_device_01 timestamp=1776792902 result=SUCCESS
+[32m✔ auth success for registered device [90m(35.196137ms)[39m[39m
+[AUTH_ATTEMPT] device_id=unknown_device timestamp=1776792902 result=DEVICE_NOT_REGISTERED
+[32m✔ auth fails for unregistered device [90m(7.733988ms)[39m[39m
+[AUTH_ATTEMPT] device_id=iot_device_01 timestamp=1776792782 result=REPLAY_ATTACK_DETECTED
+[32m✔ auth fails on replay attack window [90m(6.718394ms)[39m[39m
+[AUTH_ATTEMPT] device_id=iot_device_01 timestamp=1776792902 result=AUTHENTICATION_FAILED
+[32m✔ auth fails for wrong hmac [90m(4.359962ms)[39m[39m
+[AUTH_ATTEMPT] device_id=iot_device_01 timestamp=1776792902 result=SUCCESS
+[AUTH_ATTEMPT] device_id=iot_device_01 timestamp=1776792902 result=REPLAY_ATTACK_DETECTED
+[32m✔ auth fails when nonce is replayed [90m(9.157592ms)[39m[39m
+[AUTH_ATTEMPT] device_id=iot_device_01 timestamp=unknown result=INVALID_REQUEST
+[32m✔ returns 400 for invalid payload [90m(3.52779ms)[39m[39m
+[34mℹ tests 6[39m
+[34mℹ suites 0[39m
+[34mℹ pass 6[39m
+[34mℹ fail 0[39m
+[34mℹ cancelled 0[39m
+[34mℹ skipped 0[39m
+[34mℹ todo 0[39m
+[34mℹ duration_ms 568.933673[39m

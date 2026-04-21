@@ -1,0 +1,35 @@
+╔════════════════════════════════════════════════════════╗
+║     BLOCKCHAIN LEDGER INSPECTION TOOL                  ║
+╚════════════════════════════════════════════════════════╝
+
+📊 CHANNEL STATUS
+─────────────────────────────────────────────────────────
+  Blockchain info: {"height":7,"currentBlockHash":"mgQhH/5VGgAW+fIzGHLxurXlcyJ2+0HjMD/B8WYgk6Y=","previousBlockHash":"p10+oQRpPdrDykKvqDYISnRMC49Y2HcCWBiXuIi6rOw="}
+
+📦 TOTAL RECORDS IN LEDGER
+─────────────────────────────────────────────────────────
+  Total assets: 6
+
+🔐 IoT AUTHENTICATION RECORDS
+─────────────────────────────────────────────────────────
+  Auth events logged: 0
+
+
+⚙️  DEPLOYED CHAINCODE
+─────────────────────────────────────────────────────────
+  Package ID: basic_1.0:538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668, Label: basic_1.0
+
+📄 LATEST RECORD (Full Details)
+─────────────────────────────────────────────────────────
+  {
+    "ID": "asset6",
+    "Color": "white",
+    "Size": 15,
+    "Owner": "Michel",
+    "AppraisedValue": 800,
+  }
+
+═══════════════════════════════════════════════════════════
+✅ Ledger check complete!
+
+📖 For detailed queries, see CHECK_LEDGERS_GUIDE.md

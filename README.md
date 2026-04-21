@@ -94,6 +94,24 @@ Covers:
 - invalid HMAC rejection
 - invalid payload handling
 
+## Benchmark Authentication Performance
+
+Run load benchmark against the running gateway:
+
+```bash
+npm run benchmark:auth -- --requests 1000 --concurrency 50
+```
+
+Optional parameters:
+
+- `--url` (default: `http://localhost:3000/auth`)
+- `--device` (default: `iot_device_01`)
+- `--message` (default: `device_authentication`)
+- `--requests` (default: `500`)
+- `--concurrency` (default: `25`)
+
+The command prints JSON with throughput and latency percentiles (`p50`, `p95`, `p99`, `max`).
+
 ## Config
 
 Device client settings are in `device/config.py`:
@@ -101,6 +119,13 @@ Device client settings are in `device/config.py`:
 - `GATEWAY_URL`
 - `DEVICE_ID`
 - `MESSAGE`
+
+Gateway Fabric settings (optional environment variables):
+
+- `FABRIC_LOG_AUTH` (`true` or `false`)
+- `FABRIC_TEST_NETWORK_DIR` (path to Fabric test network)
+- `FABRIC_CHANNEL_NAME` (default: `mychannel`)
+- `FABRIC_CHAINCODE_NAME` (default: `basic`)
 
 ## Notes
 

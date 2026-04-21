@@ -1,0 +1,360 @@
+
+> capstone-project@1.0.0 fabric:iot:flow
+> ./run_iot_blockchain_flow.sh
+
+[1/6] Fabric prerequisites
+Fabric binaries already installed.
+[2/7] Clean existing network
+[0;34mUsing docker and docker-compose[0m
+[0;34mStopping network[0m
+[0;34mRemoving remaining containers[0m
+[0;34mRemoving generated chaincode docker images[0m
+Untagged: dev-peer0.org2.example.com-basic_1.0-538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668-59dff6b2403bd7c2dd336f7543f4404e47e7c6e821d9d0c8adb26752ed6a2da1:latest
+Deleted: sha256:19fdc5b8cf8ae2704f06239a3cf7509b2b964a5264ad6e206716a594df64cb9a
+Untagged: dev-peer0.org1.example.com-basic_1.0-538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668-4e2444cf8b02a7335d664f3cecd1bea35c33f5f6741a450101d32e7bc6deae62:latest
+Deleted: sha256:e0b762bcd0a67b5e0772934cf697b14119c188b5492d58a5df19a68a6f451d37
+[3/7] Start network + channel
+Fabric binaries already installed.
+[0;34mUsing docker and docker-compose[0m
+[0;34mStarting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb' with crypto from 'Certificate Authorities'[0m
+[0;34mLOCAL_VERSION=v2.5.15[0m
+[0;34mDOCKER_IMAGE_VERSION=v2.5.15[0m
+[0;34mCA_LOCAL_VERSION=v1.5.17[0m
+[0;34mCA_DOCKER_IMAGE_VERSION=v1.5.17[0m
+[0;34mGenerating certificates using Fabric CA[0m
+ Network fabric_test  Creating
+ Network fabric_test  Created
+ Container ca_orderer  Creating
+ Container ca_org1  Creating
+ Container ca_org2  Creating
+ Container ca_org1  Created
+ Container ca_org2  Created
+ Container ca_orderer  Created
+ Container ca_orderer  Starting
+ Container ca_org1  Starting
+ Container ca_org2  Starting
+ Container ca_orderer  Started
+ Container ca_org2  Started
+ Container ca_org1  Started
+[0;34mCreating Org1 Identities[0m
+[0;34mEnrolling the CA admin[0m
+[0;34mRegistering peer0[0m
+Password: peer0pw
+[0;34mRegistering user[0m
+Password: user1pw
+[0;34mRegistering the org admin[0m
+Password: org1adminpw
+[0;34mGenerating the peer0 msp[0m
+[0;34mGenerating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names[0m
+[0;34mGenerating the user msp[0m
+[0;34mGenerating the org admin msp[0m
+[0;34mCreating Org2 Identities[0m
+[0;34mEnrolling the CA admin[0m
+[0;34mRegistering peer0[0m
+Password: peer0pw
+[0;34mRegistering user[0m
+Password: user1pw
+[0;34mRegistering the org admin[0m
+Password: org2adminpw
+[0;34mGenerating the peer0 msp[0m
+[0;34mGenerating the peer0-tls certificates, use --csr.hosts to specify Subject Alternative Names[0m
+[0;34mGenerating the user msp[0m
+[0;34mGenerating the org admin msp[0m
+[0;34mCreating Orderer Org Identities[0m
+[0;34mEnrolling the CA admin[0m
+[0;34mRegistering orderer[0m
+Password: ordererpw
+[0;34mGenerating the orderer MSP[0m
+[0;34mGenerating the orderer TLS certificates, use --csr.hosts to specify Subject Alternative Names[0m
+[0;34mRegistering orderer2[0m
+Password: orderer2pw
+[0;34mGenerating the orderer2 MSP[0m
+[0;34mGenerating the orderer2 TLS certificates, use --csr.hosts to specify Subject Alternative Names[0m
+[0;34mRegistering orderer3[0m
+Password: orderer3pw
+[0;34mGenerating the orderer3 MSP[0m
+[0;34mGenerating the orderer3 TLS certificates, use --csr.hosts to specify Subject Alternative Names[0m
+[0;34mRegistering orderer4[0m
+Password: orderer4pw
+[0;34mGenerating the orderer4 MSP[0m
+[0;34mGenerating the orderer4 TLS certificates, use --csr.hosts to specify Subject Alternative Names[0m
+[0;34mRegistering the orderer admin[0m
+Password: ordererAdminpw
+[0;34mGenerating the admin msp[0m
+[0;34mGenerating CCP files for Org1 and Org2[0m
+ Volume compose_peer0.org1.example.com  Creating
+ Volume compose_peer0.org1.example.com  Created
+ Volume compose_peer0.org2.example.com  Creating
+ Volume compose_peer0.org2.example.com  Created
+ Volume compose_orderer.example.com  Creating
+ Volume compose_orderer.example.com  Created
+time="2026-04-21T17:35:26Z" level=warning msg="Found orphan containers ([ca_org2 ca_orderer ca_org1]) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up."
+ Container peer0.org1.example.com  Creating
+ Container peer0.org2.example.com  Creating
+ Container orderer.example.com  Creating
+ Container peer0.org1.example.com  Created
+ Container peer0.org2.example.com  Created
+ Container orderer.example.com  Created
+ Container peer0.org2.example.com  Starting
+ Container peer0.org1.example.com  Starting
+ Container orderer.example.com  Starting
+ Container orderer.example.com  Started
+ Container peer0.org2.example.com  Started
+ Container peer0.org1.example.com  Started
+CONTAINER ID   IMAGE                               COMMAND                  CREATED          STATUS         PORTS                                                                                                                                   NAMES
+b7ed8b7d4f26   hyperledger/fabric-peer:latest      "peer node start"        2 seconds ago    Up 1 second    0.0.0.0:7051->7051/tcp, [::]:7051->7051/tcp, 0.0.0.0:9444->9444/tcp, [::]:9444->9444/tcp                                                peer0.org1.example.com
+49e9979701b3   hyperledger/fabric-orderer:latest   "orderer"                2 seconds ago    Up 1 second    0.0.0.0:7050->7050/tcp, [::]:7050->7050/tcp, 0.0.0.0:7053->7053/tcp, [::]:7053->7053/tcp, 0.0.0.0:9443->9443/tcp, [::]:9443->9443/tcp   orderer.example.com
+27b46d660ae5   hyperledger/fabric-peer:latest      "peer node start"        2 seconds ago    Up 1 second    0.0.0.0:9051->9051/tcp, [::]:9051->9051/tcp, 7051/tcp, 0.0.0.0:9445->9445/tcp, [::]:9445->9445/tcp                                      peer0.org2.example.com
+7a6723e770f6   hyperledger/fabric-ca:latest        "sh -c 'fabric-ca-se…"   10 seconds ago   Up 9 seconds   0.0.0.0:8054->8054/tcp, [::]:8054->8054/tcp, 7054/tcp, 0.0.0.0:18054->18054/tcp, [::]:18054->18054/tcp                                  ca_org2
+fe6744862e9f   hyperledger/fabric-ca:latest        "sh -c 'fabric-ca-se…"   10 seconds ago   Up 9 seconds   0.0.0.0:9054->9054/tcp, [::]:9054->9054/tcp, 7054/tcp, 0.0.0.0:19054->19054/tcp, [::]:19054->19054/tcp                                  ca_orderer
+407733ac99e5   hyperledger/fabric-ca:latest        "sh -c 'fabric-ca-se…"   10 seconds ago   Up 9 seconds   0.0.0.0:7054->7054/tcp, [::]:7054->7054/tcp, 0.0.0.0:17054->17054/tcp, [::]:17054->17054/tcp                                            ca_org1
+149a01fdc38b   524276fa02e2                        "/bin/sh -c '#(nop) …"   15 minutes ago   Created                                                                                                                                                jovial_diffie
+3cb28360d55f   c5dc0e41577a                        "/bin/sh -c '#(nop) …"   15 minutes ago   Created                                                                                                                                                thirsty_neumann
+b9ed1c5c64ef   d9087f7b2cd5                        "/bin/sh -c '#(nop) …"   15 minutes ago   Created                                                                                                                                                epic_faraday
+e4d6cb4b20df   9b50c3a9b772                        "/bin/sh -c '#(nop) …"   15 minutes ago   Created                                                                                                                                                beautiful_golick
+125fe5efc541   2bb6d3d08775                        "/bin/sh -c '#(nop) …"   21 minutes ago   Created                                                                                                                                                pensive_sammet
+75b9be65b5f8   72b7a8a8ab78                        "/bin/sh -c '#(nop) …"   21 minutes ago   Created                                                                                                                                                epic_dijkstra
+a3bae158ab10   80073c0c3f90                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                beautiful_satoshi
+32fff16f50b7   13ea84d7193c                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                kind_matsumoto
+a5dd06c8844e   222514f0325e                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                quirky_gagarin
+836c2b121fcf   b11f5cd6e265                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                reverent_northcutt
+838ebdfbf0cb   a08f84aba1a0                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                vigorous_engelbart
+3019fd1efa39   1c7ec79c9c12                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                gifted_elgamal
+b85fbd2c20a1   6f4697318f62                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                stoic_archimedes
+e66eda57264f   8d7a05ed3322                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                gracious_cannon
+a643fc0a11eb   8baf54627b35                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                heuristic_hermann
+bfba62ec6cc3   7da165232529                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                agitated_nightingale
+98a2d5e40dc8   5d1635169ba6                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                magical_burnell
+b949e5f68008   2107815e84be                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                awesome_golick
+4a5e5af9ca6d   1a01f6e952f1                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                cool_cray
+347f39b4f5cc   dfa3385c7324                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                laughing_yonath
+022240f7b729   62fcb87145f6                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                elegant_burnell
+5c676bb46a37   5e2c7371af90                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                modest_ardinghelli
+f722e941c054   939fc214c5a1                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                xenodochial_torvalds
+55dff9992997   c01960c898d2                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                bold_khayyam
+7e8fe322c6d7   19c37abf22bc                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                determined_lichterman
+1fbdda0101e5   7dba2830a26e                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                clever_sutherland
+9db073d8acfa   5efab3bfe00e                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                hungry_newton
+bc1b3fdb017f   9a1feafe0268                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                hopeful_bohr
+ef31084d075f   44412a25a954                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                agitated_ramanujan
+e9f6f862353d   a8f1e9a145b0                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                gifted_poitras
+b3dccedcf63b   2556758277b8                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                sleepy_borg
+91d460a84c60   a4a51d88162c                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                elated_diffie
+b50c6eaebc98   7decbd8df80b                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                confident_napier
+934f642ea328   4f3b8488037e                        "/bin/sh -c '#(nop) …"   2 weeks ago      Created                                                                                                                                                serene_colden
+[0;34mUsing docker and docker-compose[0m
+[0;34mCreating channel 'mychannel'.[0m
+[0;34mIf network is not up, starting nodes with CLI timeout of '5' tries and CLI delay of '3' seconds and using database 'leveldb [0m
+Network Running Already
+[0;34mUsing docker and docker-compose[0m
+[0;34mGenerating channel genesis block 'mychannel.block'[0m
+[0;34mUsing organization 1[0m
+/workspaces/capstone_project/fabric-samples-net/test-network/../bin/configtxgen
++ '[' 0 -eq 1 ']'
++ configtxgen -profile ChannelUsingRaft -outputBlock ./channel-artifacts/mychannel.block -channelID mychannel
+[34m2026-04-21 17:35:28.590 UTC 0001 INFO[0m [common.tools.configtxgen] [34;1mmain[0m -> Loading configuration
+[34m2026-04-21 17:35:28.602 UTC 0002 INFO[0m [common.tools.configtxgen.localconfig] [34;1mcompleteInitialization[0m -> orderer type: etcdraft
+[34m2026-04-21 17:35:28.602 UTC 0003 INFO[0m [common.tools.configtxgen.localconfig] [34;1mcompleteInitialization[0m -> Orderer.EtcdRaft.Options unset, setting to tick_interval:"500ms" election_tick:10 heartbeat_tick:1 max_inflight_blocks:5 snapshot_interval_size:16777216 
+[34m2026-04-21 17:35:28.602 UTC 0004 INFO[0m [common.tools.configtxgen.localconfig] [34;1mLoad[0m -> Loaded configuration: /workspaces/capstone_project/fabric-samples-net/test-network/configtx/configtx.yaml
+[34m2026-04-21 17:35:28.607 UTC 0005 INFO[0m [common.tools.configtxgen] [34;1mdoOutputBlock[0m -> Generating genesis block
+[34m2026-04-21 17:35:28.607 UTC 0006 INFO[0m [common.tools.configtxgen] [34;1mdoOutputBlock[0m -> Creating application channel genesis block
+[34m2026-04-21 17:35:28.608 UTC 0007 INFO[0m [common.tools.configtxgen] [34;1mdoOutputBlock[0m -> Writing genesis block
++ res=0
+[0;34mCreating channel mychannel[0m
+[0;34mAdding orderers[0m
++ . scripts/orderer.sh mychannel
++ '[' 0 -eq 1 ']'
++ res=0
+Status: 201
+{
+	"name": "mychannel",
+	"url": "/participation/v1/channels/mychannel",
+	"consensusRelation": "consenter",
+	"status": "active",
+	"height": 1
+}
+
+[0;32mChannel 'mychannel' created[0m
+[0;34mJoining org1 peer to the channel...[0m
+[0;34mUsing organization 1[0m
++ peer channel join -b ./channel-artifacts/mychannel.block
++ res=0
+[34m2026-04-21 17:35:34.745 UTC 0001 INFO[0m [channelCmd] [34;1mInitCmdFactory[0m -> Endorser and orderer connections initialized
+[34m2026-04-21 17:35:34.769 UTC 0002 INFO[0m [channelCmd] [34;1mexecuteJoin[0m -> Successfully submitted proposal to join channel
+[0;34mJoining org2 peer to the channel...[0m
+[0;34mUsing organization 2[0m
++ peer channel join -b ./channel-artifacts/mychannel.block
++ res=0
+[34m2026-04-21 17:35:37.871 UTC 0001 INFO[0m [channelCmd] [34;1mInitCmdFactory[0m -> Endorser and orderer connections initialized
+[34m2026-04-21 17:35:37.910 UTC 0002 INFO[0m [channelCmd] [34;1mexecuteJoin[0m -> Successfully submitted proposal to join channel
+[0;34mSetting anchor peer for org1...[0m
+[0;34mUsing organization 1[0m
+[0;34mFetching channel config for channel mychannel[0m
+[0;34mUsing organization 1[0m
+[0;34mFetching the most recent configuration block for the channel[0m
+++ peer channel fetch config /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile /workspaces/capstone_project/fabric-samples-net/test-network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+[34m2026-04-21 17:35:37.995 UTC 0001 INFO[0m [channelCmd] [34;1mInitCmdFactory[0m -> Endorser and orderer connections initialized
+[34m2026-04-21 17:35:37.998 UTC 0002 INFO[0m [cli.common] [34;1mreadBlock[0m -> Received block: 0
+[34m2026-04-21 17:35:37.998 UTC 0003 INFO[0m [channelCmd] [34;1mfetch[0m -> Retrieving last config block: 0
+[34m2026-04-21 17:35:38.000 UTC 0004 INFO[0m [cli.common] [34;1mreadBlock[0m -> Received block: 0
+[0;34mDecoding config block to JSON and isolating config to /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org1MSPconfig.json[0m
+++ configtxlator proto_decode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.pb --type common.Block --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.json
+++ jq '.data.data[0].payload.data.config' /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.json
+++ res=0
+[0;34mGenerating anchor peer update transaction for Org1 on channel mychannel[0m
+++ jq '.channel_group.groups.Application.groups.Org1MSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.org1.example.com","port": 7051}]},"version": "0"}}' /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org1MSPconfig.json
+++ res=0
+++ configtxlator proto_encode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org1MSPconfig.json --type common.Config --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/original_config.pb
+++ configtxlator proto_encode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org1MSPmodified_config.json --type common.Config --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/modified_config.pb
+++ configtxlator compute_update --channel_id mychannel --original /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/original_config.pb --updated /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/modified_config.pb --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.pb
+++ configtxlator proto_decode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.pb --type common.ConfigUpdate --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.json
+++ jq .
++++ cat /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.json
+++ echo '{"payload":{"header":{"channel_header":{"channel_id":"mychannel", "type":2}},"data":{"config_update":{' '"channel_id":' '"mychannel",' '"isolated_data":' '{},' '"read_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org1MSP":' '{' '"groups":' '{},' '"mod_policy":' '"",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '},' '"write_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org1MSP":' '{' '"groups":' '{},' '"mod_policy":' '"Admins",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"AnchorPeers":' '{' '"mod_policy":' '"Admins",' '"value":' '{' '"anchor_peers":' '[' '{' '"host":' '"peer0.org1.example.com",' '"port":' 7051 '}' ']' '},' '"version":' '"0"' '},' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"1"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '}}}}'
+++ configtxlator proto_encode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update_in_envelope.json --type common.Envelope --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org1MSPanchors.tx
+[34m2026-04-21 17:35:38.204 UTC 0001 INFO[0m [channelCmd] [34;1mInitCmdFactory[0m -> Endorser and orderer connections initialized
+[34m2026-04-21 17:35:38.238 UTC 0002 INFO[0m [channelCmd] [34;1mupdate[0m -> Successfully submitted channel update
+[0;32mAnchor peer set for org 'Org1MSP' on channel 'mychannel'[0m
+[0;34mSetting anchor peer for org2...[0m
+[0;34mUsing organization 2[0m
+[0;34mFetching channel config for channel mychannel[0m
+[0;34mUsing organization 2[0m
+[0;34mFetching the most recent configuration block for the channel[0m
+++ peer channel fetch config /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.pb -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c mychannel --tls --cafile /workspaces/capstone_project/fabric-samples-net/test-network/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+[34m2026-04-21 17:35:38.491 UTC 0001 INFO[0m [channelCmd] [34;1mInitCmdFactory[0m -> Endorser and orderer connections initialized
+[34m2026-04-21 17:35:38.496 UTC 0002 INFO[0m [cli.common] [34;1mreadBlock[0m -> Received block: 1
+[34m2026-04-21 17:35:38.496 UTC 0003 INFO[0m [channelCmd] [34;1mfetch[0m -> Retrieving last config block: 1
+[34m2026-04-21 17:35:38.498 UTC 0004 INFO[0m [cli.common] [34;1mreadBlock[0m -> Received block: 1
+[0;34mDecoding config block to JSON and isolating config to /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org2MSPconfig.json[0m
+++ configtxlator proto_decode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.pb --type common.Block --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.json
+++ jq '.data.data[0].payload.data.config' /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_block.json
+++ res=0
+[0;34mGenerating anchor peer update transaction for Org2 on channel mychannel[0m
+++ jq '.channel_group.groups.Application.groups.Org2MSP.values += {"AnchorPeers":{"mod_policy": "Admins","value":{"anchor_peers": [{"host": "peer0.org2.example.com","port": 9051}]},"version": "0"}}' /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org2MSPconfig.json
+++ res=0
+++ configtxlator proto_encode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org2MSPconfig.json --type common.Config --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/original_config.pb
+++ configtxlator proto_encode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org2MSPmodified_config.json --type common.Config --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/modified_config.pb
+++ configtxlator compute_update --channel_id mychannel --original /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/original_config.pb --updated /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/modified_config.pb --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.pb
+++ configtxlator proto_decode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.pb --type common.ConfigUpdate --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.json
+++ jq .
++++ cat /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update.json
+++ echo '{"payload":{"header":{"channel_header":{"channel_id":"mychannel", "type":2}},"data":{"config_update":{' '"channel_id":' '"mychannel",' '"isolated_data":' '{},' '"read_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org2MSP":' '{' '"groups":' '{},' '"mod_policy":' '"",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '},' '"write_set":' '{' '"groups":' '{' '"Application":' '{' '"groups":' '{' '"Org2MSP":' '{' '"groups":' '{},' '"mod_policy":' '"Admins",' '"policies":' '{' '"Admins":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Endorsement":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Readers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '},' '"Writers":' '{' '"mod_policy":' '"",' '"policy":' null, '"version":' '"0"' '}' '},' '"values":' '{' '"AnchorPeers":' '{' '"mod_policy":' '"Admins",' '"value":' '{' '"anchor_peers":' '[' '{' '"host":' '"peer0.org2.example.com",' '"port":' 9051 '}' ']' '},' '"version":' '"0"' '},' '"MSP":' '{' '"mod_policy":' '"",' '"value":' null, '"version":' '"0"' '}' '},' '"version":' '"1"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '},' '"mod_policy":' '"",' '"policies":' '{},' '"values":' '{},' '"version":' '"0"' '}' '}}}}'
+++ configtxlator proto_encode --input /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/config_update_in_envelope.json --type common.Envelope --output /workspaces/capstone_project/fabric-samples-net/test-network/channel-artifacts/Org2MSPanchors.tx
+[34m2026-04-21 17:35:38.752 UTC 0001 INFO[0m [channelCmd] [34;1mInitCmdFactory[0m -> Endorser and orderer connections initialized
+[34m2026-04-21 17:35:38.763 UTC 0002 INFO[0m [channelCmd] [34;1mupdate[0m -> Successfully submitted channel update
+[0;32mAnchor peer set for org 'Org2MSP' on channel 'mychannel'[0m
+[0;32mChannel 'mychannel' joined[0m
+[4/7] Deploy chaincode
+[0;34mUsing docker and docker-compose[0m
+[0;34mdeploying chaincode on channel 'mychannel'[0m
+executing with the following
+- CHANNEL_NAME: [0;32mmychannel[0m
+- CC_NAME: [0;32mbasic[0m
+- CC_SRC_PATH: [0;32m../asset-transfer-auth/chaincode-go[0m
+- CC_SRC_LANGUAGE: [0;32mgo[0m
+- CC_VERSION: [0;32m1.0[0m
+- CC_SEQUENCE: [0;32mauto[0m
+- CC_END_POLICY: [0;32mNA[0m
+- CC_COLL_CONFIG: [0;32mNA[0m
+- CC_INIT_FCN: [0;32mNA[0m
+- DELAY: [0;32m3[0m
+- MAX_RETRY: [0;32m5[0m
+- VERBOSE: [0;32mfalse[0m
+executing with the following
+- CC_NAME: [0;32mbasic[0m
+- CC_SRC_PATH: [0;32m../asset-transfer-auth/chaincode-go[0m
+- CC_SRC_LANGUAGE: [0;32mgo[0m
+- CC_VERSION: [0;32m1.0[0m
+[0;34mVendoring Go dependencies at ../asset-transfer-auth/chaincode-go[0m
+/workspaces/capstone_project/fabric-samples-net/asset-transfer-auth/chaincode-go /workspaces/capstone_project/fabric-samples-net/test-network
+/workspaces/capstone_project/fabric-samples-net/test-network
+[0;32mFinished vendoring Go dependencies[0m
+[0;32mChaincode is packaged[0m
+[0;34mInstalling chaincode on peer0.org1...[0m
+[0;34mUsing organization 1[0m
+[34m2026-04-21 17:36:38.105 UTC 0001 INFO[0m [cli.lifecycle.chaincode] [34;1msubmitInstallProposal[0m -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668\022\tbasic_1.0" > 
+[34m2026-04-21 17:36:38.106 UTC 0002 INFO[0m [cli.lifecycle.chaincode] [34;1msubmitInstallProposal[0m -> Chaincode code package identifier: basic_1.0:538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668
+[0;32mChaincode is installed on peer0.org1[0m
+[0;34mInstall chaincode on peer0.org2...[0m
+[0;34mUsing organization 2[0m
+[34m2026-04-21 17:37:32.112 UTC 0001 INFO[0m [cli.lifecycle.chaincode] [34;1msubmitInstallProposal[0m -> Installed remotely: response:<status:200 payload:"\nJbasic_1.0:538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668\022\tbasic_1.0" > 
+[34m2026-04-21 17:37:32.112 UTC 0002 INFO[0m [cli.lifecycle.chaincode] [34;1msubmitInstallProposal[0m -> Chaincode code package identifier: basic_1.0:538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668
+[0;32mChaincode is installed on peer0.org2[0m
+[0;34mUsing organization 1[0m
+basic_1.0:538cfd5fdfdb67f8a141f8721f81e3a73262f3c831a78381bc1bcd0fe1453668
+[0;32mQuery installed successful on peer0.org1 on channel[0m
+[0;34mUsing organization 1[0m
+[34m2026-04-21 17:37:34.396 UTC 0001 INFO[0m [chaincodeCmd] [34;1mClientWait[0m -> txid [7e4436397d557a71203db542e851f6740aa9aeedcd971fcfd6d0a6ad314b516f] committed with status (VALID) at localhost:7051
+[0;32mChaincode definition approved on peer0.org1 on channel 'mychannel'[0m
+[0;34mUsing organization 1[0m
+[0;34mChecking the commit readiness of the chaincode definition on peer0.org1 on channel 'mychannel'...[0m
+[0;34mAttempting to check the commit readiness of the chaincode definition on peer0.org1, Retry after 3 seconds.[0m
+{
+	"approvals": {
+		"Org1MSP": true,
+		"Org2MSP": false
+	}
+}
+[0;34mChecking the commit readiness of the chaincode definition successful on peer0.org1 on channel 'mychannel'[0m
+[0;34mUsing organization 2[0m
+[0;34mChecking the commit readiness of the chaincode definition on peer0.org2 on channel 'mychannel'...[0m
+[0;34mAttempting to check the commit readiness of the chaincode definition on peer0.org2, Retry after 3 seconds.[0m
+{
+	"approvals": {
+		"Org1MSP": true,
+		"Org2MSP": false
+	}
+}
+[0;34mChecking the commit readiness of the chaincode definition successful on peer0.org2 on channel 'mychannel'[0m
+[0;34mUsing organization 2[0m
+[34m2026-04-21 17:37:42.725 UTC 0001 INFO[0m [chaincodeCmd] [34;1mClientWait[0m -> txid [7e618b0bb2c299d982c1156bc3e24716df6bda852c90a80190652d3f01c9283a] committed with status (VALID) at localhost:9051
+[0;32mChaincode definition approved on peer0.org2 on channel 'mychannel'[0m
+[0;34mUsing organization 1[0m
+[0;34mChecking the commit readiness of the chaincode definition on peer0.org1 on channel 'mychannel'...[0m
+[0;34mAttempting to check the commit readiness of the chaincode definition on peer0.org1, Retry after 3 seconds.[0m
+{
+	"approvals": {
+		"Org1MSP": true,
+		"Org2MSP": true
+	}
+}
+[0;34mChecking the commit readiness of the chaincode definition successful on peer0.org1 on channel 'mychannel'[0m
+[0;34mUsing organization 2[0m
+[0;34mChecking the commit readiness of the chaincode definition on peer0.org2 on channel 'mychannel'...[0m
+[0;34mAttempting to check the commit readiness of the chaincode definition on peer0.org2, Retry after 3 seconds.[0m
+{
+	"approvals": {
+		"Org1MSP": true,
+		"Org2MSP": true
+	}
+}
+[0;34mChecking the commit readiness of the chaincode definition successful on peer0.org2 on channel 'mychannel'[0m
+[0;34mUsing organization 1[0m
+[0;34mUsing organization 2[0m
+[34m2026-04-21 17:37:51.426 UTC 0001 INFO[0m [chaincodeCmd] [34;1mClientWait[0m -> txid [c4b3d24d8185635d0352cc8d491975cf3f3541297d6dec41929af8e2859fef2f] committed with status (VALID) at localhost:9051
+[34m2026-04-21 17:37:51.465 UTC 0002 INFO[0m [chaincodeCmd] [34;1mClientWait[0m -> txid [c4b3d24d8185635d0352cc8d491975cf3f3541297d6dec41929af8e2859fef2f] committed with status (VALID) at localhost:7051
+[0;32mChaincode definition committed on channel 'mychannel'[0m
+[0;34mUsing organization 1[0m
+[0;34mQuerying chaincode definition on peer0.org1 on channel 'mychannel'...[0m
+[0;34mAttempting to Query committed status on peer0.org1, Retry after 3 seconds.[0m
+Committed chaincode definition for chaincode 'basic' on channel 'mychannel':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [Org1MSP: true, Org2MSP: true]
+[0;32mQuery chaincode definition successful on peer0.org1 on channel 'mychannel'[0m
+[0;34mUsing organization 2[0m
+[0;34mQuerying chaincode definition on peer0.org2 on channel 'mychannel'...[0m
+[0;34mAttempting to Query committed status on peer0.org2, Retry after 3 seconds.[0m
+Committed chaincode definition for chaincode 'basic' on channel 'mychannel':
+Version: 1.0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc, Approvals: [Org1MSP: true, Org2MSP: true]
+[0;32mQuery chaincode definition successful on peer0.org2 on channel 'mychannel'[0m
+[0;34mChaincode initialization is not required[0m
+[5/7] Start gateway with Fabric logging
+[6/7] Run IoT demo auth cases
+[VALID_CASE] HTTP 200: {"status":"SUCCESS","message":"Device authenticated"}
+[REPLAY_ATTACK] HTTP 401: {"status":"FAILED","message":"Replay attack detected"}
+[INVALID_HMAC] HTTP 401: {"status":"FAILED","message":"Authentication failed"}
+[UNREGISTERED_DEVICE] HTTP 401: {"status":"FAILED","message":"Device not registered"}
+[INVALID_PAYLOAD] HTTP 400: {"status":"FAILED","message":"Invalid request body"}
+[7/7] Verify chaincode query
+
+Gateway logs: /tmp/capstone_gateway.log
+Completed: network up, channel created, chaincode deployed, IoT auth executed, blockchain tx verified.
