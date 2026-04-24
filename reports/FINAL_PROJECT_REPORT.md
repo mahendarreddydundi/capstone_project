@@ -138,7 +138,25 @@ Artifacts include:
 - Long-duration ledger growth experiments
 - Optional biometric fusion (fingerprint/iris)
 - Post-quantum cryptographic migration analysis
+Create a clean IEEE-style system architecture diagram for a blockchain-based IoT authentication framework.
 
+Title: Three-Layer IoT Authentication Framework
+
+Show these three layers:
+1. Device Layer (Python): SRAM-PUF simulation, HMAC-SHA256 signing, nonce and timestamp generation
+2. Gateway Layer (Node.js/Express): schema validation, device registry check, timestamp freshness ±60s, nonce replay check, constant-time HMAC verification
+3. Blockchain Layer (Hyperledger Fabric): asynchronous audit logging using CreateAsset transaction
+
+Show the flow:
+- Device sends POST /auth to Gateway
+- Gateway performs security checks
+- Successful authentication is logged asynchronously to Blockchain
+- Use arrows, labels, and a professional white-background IEEE style
+
+Return:
+- Mermaid diagram
+- SVG-ready version
+- short figure caption
 ## 11. Conclusion
 
 The project objectives were achieved at system level: secure authentication, replay protection, and immutable auditability using a practical IoT-to-gateway-to-blockchain pipeline. The implementation is demonstration-ready and reproducible, with clear paths for publication-grade measurement expansion and production hardening.

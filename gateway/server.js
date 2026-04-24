@@ -7,7 +7,7 @@ const { logAuthSuccessToBlockchain } = require("./blockchainLogger")
 
 const app = express()
 
-app.use(bodyParser.json())
+app.use(bodyParser.json({ limit:"16kb" }))
 
 const seenNoncesByDevice = new Map()
 
@@ -33,18 +33,21 @@ function cleanupExpiredNonces(nowInSeconds){
     }
 }
 
-function isNonceReplay(deviceId, nonce, timestamp){
+function isNonceReplay(deviceId, nonce){
     const nonceMap = seenNoncesByDevice.get(deviceId)
 
     if(nonceMap && nonceMap.has(nonce)){
         return true
     }
 
+    return false
+}
+
+function rememberNonce(deviceId, nonce, timestamp){
+    const nonceMap = seenNoncesByDevice.get(deviceId)
     const nextNonceMap = nonceMap || new Map()
     nextNonceMap.set(nonce, timestamp)
     seenNoncesByDevice.set(deviceId, nextNonceMap)
-
-    return false
 }
 
 function isValidRequestBody(body){
@@ -69,7 +72,7 @@ function isValidRequestBody(body){
         return false
     }
 
-    if(typeof nonce !== "string" || nonce.length < 8){
+    if(typeof nonce !== "string" || !/^[a-f0-9]{32}$/i.test(nonce)){
         return false
     }
 
@@ -82,6 +85,13 @@ function isValidRequestBody(body){
 }
 
 app.post("/auth", (req, res) => {
+
+    if(process.env.REQUIRE_HTTPS === "true" && req.secure !== true){
+        return res.status(426).json({
+            status:"FAILED",
+            message:"HTTPS required"
+        })
+    }
 
     const rawDeviceId = req.body && req.body.device_id
     const rawTimestamp = req.body && req.body.timestamp
@@ -125,7 +135,7 @@ app.post("/auth", (req, res) => {
     }
 
     // Step 3: reject reused nonce per device within valid window
-    if(isNonceReplay(device_id, nonce, timestamp)){
+    if(isNonceReplay(device_id, nonce)){
         logAuthAttempt(device_id, timestamp, "REPLAY_ATTACK_DETECTED")
         return res.status(401).json({
             status:"FAILED",
@@ -137,6 +147,9 @@ app.post("/auth", (req, res) => {
     const result = verifyAuthentication(req.body)
 
     if(result.success){
+
+        // Record nonce only after cryptographic verification succeeds.
+        rememberNonce(device_id, nonce, timestamp)
 
         logAuthAttempt(device_id, timestamp, "SUCCESS")
 

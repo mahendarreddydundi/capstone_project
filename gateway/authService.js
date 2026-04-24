@@ -1,9 +1,12 @@
 const crypto = require("crypto")
 
+const PUF_MASTER_SECRET = process.env.PUF_MASTER_SECRET || "CHANGE_THIS_DEV_SECRET_IN_PRODUCTION"
+
 function deriveSecret(deviceId){
 
+    // Use keyed derivation so secrets are not computable from public device IDs.
     return crypto
-        .createHash("sha256")
+        .createHmac("sha256", PUF_MASTER_SECRET)
         .update(deviceId)
         .digest("hex")
 
@@ -38,4 +41,4 @@ function verifyAuthentication(data){
 
 }
 
-module.exports = { verifyAuthentication }
+module.exports = { verifyAuthentication, deriveSecret }

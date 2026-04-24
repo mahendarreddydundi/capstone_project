@@ -7,14 +7,14 @@ import time
 
 from puf import SRAMPUF
 from hmac_auth import HMACAuth
-from config import DEVICE_ID, MESSAGE, GATEWAY_URL
+from config import DEVICE_ID, MESSAGE, GATEWAY_URL, PUF_MASTER_SECRET
 
 
 class IoTDevice:
 
     def __init__(self):
 
-        self.puf = SRAMPUF(DEVICE_ID)
+        self.puf = SRAMPUF(DEVICE_ID, PUF_MASTER_SECRET)
 
         self.secret = self.puf.generate_response()
 

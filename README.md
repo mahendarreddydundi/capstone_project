@@ -1,133 +1,101 @@
-# PUF + HMAC IoT Authentication Gateway
+# Blockchain-Based IoT Device Authentication Framework Using Physical Unclonable Functions and HMAC-SHA256
 
-This project demonstrates a lightweight IoT authentication flow:
+This repository contains the implementation used for the capstone security framework and paper evidence.
 
-- Device side (Python): generates a deterministic PUF-based secret from device ID and signs payloads with HMAC-SHA256.
-- Gateway side (Node.js/Express): verifies registration, checks replay window, and validates HMAC.
+## Core Security Model
 
-## Project Structure
+- Device side (Python): simulates a PUF-derived key using a keyed derivation and signs payloads with HMAC-SHA256.
+- Gateway side (Node.js/Express): enforces strict validation and five checks in order:
+  - schema validation
+  - device registry check
+  - timestamp freshness window (+/-60 seconds)
+  - per-device nonce replay check
+  - constant-time HMAC verification
+- Blockchain side (Hyperledger Fabric): successful authentications are logged asynchronously for immutable auditability.
 
-- `device/`: IoT client, PUF simulation, and HMAC token generation.
-- `gateway/`: authentication API and device registry.
-- `fabric-samples/`: Hyperledger Fabric samples (independent from the auth demo).
+## Repository Layout
+
+- `device/`: IoT client, PUF simulation, and HMAC token generation
+- `gateway/`: authentication server, tests, benchmark, and blockchain logging adapter
+- `fabric-samples-net/`: Fabric test-network and chaincode deployment assets
+- `scripts/`: automation runner for reproducible test + benchmark artifacts
+- `reports/generated/`: generated run artifacts and output files
+- `CODE_WALKTHROUGH.md`: implementation walkthrough and security rationale
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - Python 3.10+
+- Docker (for Fabric network)
 
-## Setup
+## Quick Start
 
-### 1. Install Node dependencies
+1. Install Node dependencies:
 
 ```bash
 npm install
 ```
 
-### 2. Install Python dependencies
+2. Set shared PUF master secret (required for secure runs):
 
 ```bash
-pip install -r requirements.txt
+export PUF_MASTER_SECRET="replace-with-strong-secret"
 ```
 
-## Run the Demo
-
-### 1. Start the gateway
+3. Start gateway:
 
 ```bash
 npm start
 ```
 
-Gateway endpoint:
-
-- `POST /auth` on `http://localhost:3000/auth`
-
-### 2. Run the IoT device client (new terminal)
-
-```bash
-python device/device_client.py
-```
-
-To demonstrate both valid and invalid/attack scenarios (recommended for capstone evidence):
+4. Run device demo scenarios in another terminal:
 
 ```bash
 python device/device_client.py --demo-cases
 ```
 
-On Windows PowerShell, do not run the script name directly (for example, `device_client.py`).
-Use Python explicitly:
+## Test and Benchmark
 
-```powershell
-d:/urop/capstone-project/.venv/Scripts/python.exe device/device_client.py
-```
-
-If your terminal is already inside the `device` folder, run:
-
-```powershell
-d:/urop/capstone-project/.venv/Scripts/python.exe .\device_client.py
-```
-
-Expected behavior:
-
-- If the device is registered and token is valid, gateway responds with `SUCCESS`.
-- If the device is unknown, replayed, or tampered, gateway responds with `FAILED`.
-
-When running `--demo-cases`, you should see mixed outcomes, for example:
-
-- `VALID_CASE` -> `SUCCESS`
-- `REPLAY_ATTACK` -> `FAILED` (`Replay attack detected`)
-- `INVALID_HMAC` -> `FAILED` (`Authentication failed`)
-- `UNREGISTERED_DEVICE` -> `FAILED` (`Device not registered`)
-- `INVALID_PAYLOAD` -> `FAILED` (`Invalid request body`)
-
-## Run Tests
+- Unit tests:
 
 ```bash
 npm test
 ```
 
-Covers:
-
-- successful authentication
-- unregistered device rejection
-- replay attack rejection
-- invalid HMAC rejection
-- invalid payload handling
-
-## Benchmark Authentication Performance
-
-Run load benchmark against the running gateway:
+- Benchmark:
 
 ```bash
-npm run benchmark:auth -- --requests 1000 --concurrency 50
+npm run benchmark:auth -- --requests 200 --concurrency 20
 ```
 
-Optional parameters:
+## Full Reproducible Flow
 
-- `--url` (default: `http://localhost:3000/auth`)
-- `--device` (default: `iot_device_01`)
-- `--message` (default: `device_authentication`)
-- `--requests` (default: `500`)
-- `--concurrency` (default: `25`)
+- End-to-end Fabric + gateway + device flow:
 
-The command prints JSON with throughput and latency percentiles (`p50`, `p95`, `p99`, `max`).
+```bash
+npm run fabric:iot:flow
+```
 
-## Config
+- Full automation with generated outputs:
 
-Device client settings are in `device/config.py`:
+```bash
+npm run automate:all
+```
 
-- `GATEWAY_URL`
-- `DEVICE_ID`
-- `MESSAGE`
+## Environment Variables
 
-Gateway Fabric settings (optional environment variables):
+- `PUF_MASTER_SECRET`: shared secret used for keyed PUF simulation
+- `GATEWAY_URL`: device client target endpoint (default: `http://localhost:3000/auth`)
+- `DEVICE_ID`: device identity used by the Python client
+- `MESSAGE`: signed payload message
+- `FABRIC_LOG_AUTH`: enable/disable blockchain audit logging (`true` or `false`)
+- `FABRIC_TEST_NETWORK_DIR`: Fabric test-network path
+- `FABRIC_CHANNEL_NAME`: Fabric channel (default: `mychannel`)
+- `FABRIC_CHAINCODE_NAME`: chaincode name (default: `basic`)
+- `REQUIRE_HTTPS`: when `true`, gateway rejects non-HTTPS auth requests
 
-- `FABRIC_LOG_AUTH` (`true` or `false`)
-- `FABRIC_TEST_NETWORK_DIR` (path to Fabric test network)
-- `FABRIC_CHANNEL_NAME` (default: `mychannel`)
-- `FABRIC_CHAINCODE_NAME` (default: `basic`)
+## Security Notes
 
-## Notes
-
-- The file `reqirements.txt` is a legacy typo copy; use `requirements.txt`.
-- For production systems, secrets must not be derivable from public IDs; use secure hardware-backed key material.
+- Do not use default development secrets in production.
+- Use TLS/mTLS for device-gateway and gateway-Fabric communication.
+- Use hardware PUF and secure key enrollment for production deployments.

@@ -1,4 +1,5 @@
 const crypto = require("crypto")
+const { deriveSecret } = require("./authService")
 
 function parseArgs(argv){
     const defaults = {
@@ -42,13 +43,6 @@ function parseArgs(argv){
     }
 
     return out
-}
-
-function deriveSecret(deviceId){
-    return crypto
-        .createHash("sha256")
-        .update(deviceId)
-        .digest("hex")
 }
 
 function buildHmac({ deviceId, message, timestamp, nonce }){
@@ -186,4 +180,8 @@ async function main(){
     }
 }
 
-main()
+if(require.main === module){
+    main()
+}
+
+module.exports = { runBenchmark }
