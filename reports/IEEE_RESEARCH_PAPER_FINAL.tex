@@ -1,0 +1,828 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+%% Core packages
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{balance}
+
+%% Figures path (Overleaf: keep all figures in figures/)
+\graphicspath{{figures/}}
+
+%% Circled step numbers in captions
+\newcommand{\circled}[1]{%
+  \raisebox{.5pt}{\textcircled{\raisebox{-.9pt}{\scriptsize #1}}}}
+
+%% Code-listing style
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape\color{gray}
+}
+
+%% Custom column types
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+
+\begin{document}
+
+\title{Blockchain-Based IoT Device Authentication Framework Using\\
+Physical Unclonable Functions and HMAC-SHA256}
+
+\author{
+  \IEEEauthorblockN{%
+    Dundi Mahendar Reddy\textsuperscript{1},\;
+    GangaRamPrasad Kotakonda\textsuperscript{2},\;
+    Rahul Sambaturu\textsuperscript{3},\;
+    Asif Shaik\textsuperscript{4}}
+  \IEEEauthorblockA{%
+    Department of Computer Science and Engineering,
+    SRM University AP, Andhra Pradesh, India\\
+    \textsuperscript{1}AP22110011262\quad
+    \textsuperscript{2}AP22110011255\quad
+    \textsuperscript{3}AP22110011279\quad
+    \textsuperscript{4}AP22110011258\\
+    Supervisor: Dr.\ Mallavalli Sitharam\qquad
+    Project ID: CAPSTONE 2022 24183 4}
+}
+
+\maketitle
+
+\begin{abstract}
+IoT authentication in large-scale deployments remains constrained by three
+practical risks: cloneable static credentials, replay exposure under
+low-latency requirements, and mutable post-event logs. This paper presents a
+reproducible framework that combines PUF-derived device secrets, HMAC-SHA256
+request signing, and Hyperledger Fabric audit logging. A Python device client
+generates a software PUF surrogate secret,
+$k_d=\mathrm{SHA\text{-}256}(\mathrm{device\_id})$, and signs
+$\langle m,t,\eta\rangle$ using a fresh 128-bit nonce $\eta$ per request. A
+Node.js/Express gateway performs five sequential checks: schema validation,
+device registry verification, timestamp freshness ($\pm60$ s), per-device
+nonce replay detection, and constant-time HMAC validation via
+\texttt{crypto.timingSafeEqual}. Successful authentications are logged
+asynchronously to Hyperledger Fabric v2.5.15 (etcd-Raft). Experimental
+validation shows 6/6 passing gateway unit tests and correct behavior across
+five adversarial integration scenarios. Over five benchmark trials (200
+requests, concurrency 20), the system achieves mean throughput 366.07 auth/s,
+p50 latency 38.38 ms, and p99 latency 132.79 ms (95\% CI: $\pm1.52$ ms), with
+100\% success in all trials. The blockchain layer is used exclusively for asynchronous audit logging and is not part of the authentication decision path.
+The implementation is fully automatable and provides a practical baseline for
+research-grade IoT authentication.
+\end{abstract}
+
+\begin{IEEEkeywords}
+IoT security, Physical Unclonable Function, SRAM-PUF, HMAC-SHA256,
+Hyperledger Fabric, blockchain, replay attack prevention, nonce ledger,
+device authentication, edge gateway security, Go chaincode
+\end{IEEEkeywords}
+
+\section{Introduction}
+\label{sec:intro}
+
+The global IoT device population is projected to surpass 25 billion by
+2030~\cite{ericsson2023}, while many deployments still rely on static symmetric
+credentials provisioned once and reused for long periods. NIST guidance for IoT
+cybersecurity explicitly warns that weak identity lifecycle controls and
+insufficient telemetry integrity increase both attack surface and incident
+recovery cost~\cite{nist8228}. In practice, extracted keys can be reused for
+spoofing, replay artifacts can evade weak freshness checks, and mutable host logs
+provide poor forensic value after compromise.
+The broader IoT ecosystem is marked by heterogeneous devices, constrained
+resources, and large-scale deployment complexity~\cite{atzori2010internet}.
+
+Three mature techniques address different parts of this problem.
+PUFs exploit microscopic manufacturing variation to derive device-unique secrets
+without storing long-term keys in plaintext non-volatile memory~\cite{herder2014puf,suh2007physical}.
+HMAC provides efficient, symmetric integrity and origin authentication suitable
+for constrained devices~\cite{rfc2104}. Permissioned blockchains such as
+Hyperledger Fabric provide consensus-validated, append-only ledgers for
+tamper-evident auditing~\cite{fabric_docs}.
+
+Despite this complementarity, integrating all three into a low-latency,
+reproducible, end-to-end pipeline remains difficult in practice. Existing work
+often combines only two components or lacks full automation and measurable
+system-level evidence~\cite{lee2020puf,xu2018blendcac}.
+
+\subsection{Contributions}
+
+This work makes four concrete contributions:
+
+\begin{enumerate}
+\item \textbf{Latency-optimized authentication pipeline.} A three-layer
+architecture combines Python device signing, Node.js gateway verification, and
+Hyperledger Fabric logging while preserving low response latency.
+
+\item \textbf{Stateless verification design.} Gateway decisions rely on
+deterministic HMAC recomputation, strict schema validation, registry checks,
+timestamp freshness, and nonce replay control without introducing blockchain
+dependencies in the decision path.
+
+\item \textbf{Reproducible end-to-end implementation.} The complete workflow,
+including network bring-up, tests, and benchmarking, is executable through
+automation scripts.
+
+\item \textbf{Audit integrity via asynchronous ledger integration.} Successful
+authentications are recorded immutably on Fabric through non-blocking logging,
+supporting forensic traceability with bounded latency impact.
+\end{enumerate}
+
+The remainder of this paper is organized as follows. Section~\ref{sec:related}
+reviews prior work. Section~\ref{sec:design} presents architecture and threat
+model. Section~\ref{sec:impl} details implementation. Section~\ref{sec:eval}
+reports evaluation. Section~\ref{sec:discuss} discusses limitations and future
+work. Section~\ref{sec:conclusion} concludes.
+
+\section{Related Work}
+\label{sec:related}
+
+\subsection{PUF-Based Device Authentication}
+
+Suh and Devadas~\cite{suh2007physical} established silicon PUFs as a practical
+hardware root of trust. Herder et al.~\cite{herder2014puf} surveyed
+implementation trade-offs and fuzzy extractor requirements under environmental
+variation, and Maes~\cite{maes2013puf} provides additional construction-level
+context. Our framework uses a software PUF surrogate for reproducible
+end-to-end validation while preserving an interface compatible with hardware PUF
+substitution.
+
+\subsection{Lightweight HMAC Authentication for IoT}
+
+HMAC was formalized by Krawczyk et al.~\cite{rfc2104} as a secure MAC
+construction. Prior applied work also reports the practicality of lightweight
+cryptographic authentication in constrained contexts~\cite{bos2014differential}.
+Our gateway implementation emphasizes constant-time comparison to reduce
+verification-side timing leakage.
+
+\subsection{Blockchain-Backed IoT Security}
+
+Novo~\cite{novo2018blockchain} explored scalable blockchain access control for
+IoT, while Dorri et al.~\cite{dorri2017blockchain} used blockchain for
+tamper-evident IoT logging. Makhdoom et al.~\cite{makhdoom2019} highlighted
+latency and deployment complexity as key barriers to direct inline blockchain
+verification. Christidis and Devetsikiotis~\cite{christidis2016blockchains}
+discussed blockchain and smart-contract coordination for IoT systems.
+
+\subsection{Combined PUF--Blockchain Approaches}
+
+Lee and Lee~\cite{lee2020puf} proposed a PUF-assisted blockchain design without
+full reproducible implementation evidence. Xu et al.~\cite{xu2018blendcac}
+combined blockchain with capability-based access control (PKI-oriented) rather
+than PUF-derived symmetric device secrets.
+
+Traditional gateway authentication stacks based on JWT or OAuth commonly depend
+on centralized token issuers, key stores, or introspection services,
+introducing additional trust concentration and operational dependency. In
+contrast, our design uses device-bound PUF-derived secrets and stateless HMAC
+verification at the gateway, eliminating online token authority requirements for
+each request. This approach reduces centralized key-management exposure while
+preserving low-complexity verification semantics for constrained IoT settings.
+
+\begin{table}[!htbp]
+\caption{Comparison With Related Work (BC = Blockchain; E2E = End-to-End;
+Rep. = Reproducible Automation; Ben. = Benchmark Reported)}
+\label{tab:related_comparison}
+\centering
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\columnwidth}{@{}L{2.2cm}C{0.6cm}C{0.75cm}C{0.55cm}C{0.7cm}C{0.55cm}C{0.55cm}@{}}
+\toprule
+\textbf{Work} & \textbf{PUF} & \textbf{HMAC} & \textbf{BC}
+              & \textbf{E2E}  & \textbf{Rep.} & \textbf{Ben.} \\
+\midrule
+Suh \& Devadas~\cite{suh2007physical}  & \checkmark & ---        & ---        & ---        & --- & --- \\
+Herder et al.~\cite{herder2014puf}      & \checkmark & ---        & ---        & ---        & --- & --- \\
+Lee \& Lee~\cite{lee2020puf}            & \checkmark & ---        & \checkmark & Part.      & --- & --- \\
+Xu et al.~\cite{xu2018blendcac}         & ---        & ---        & \checkmark & \checkmark & --- & --- \\
+Novo~\cite{novo2018blockchain}          & ---        & ---        & \checkmark & \checkmark & --- & --- \\
+Dorri et al.~\cite{dorri2017blockchain} & ---        & ---        & \checkmark & \checkmark & --- & --- \\
+\textbf{This work}                      & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{System Design}
+\label{sec:design}
+
+\subsection{Architecture Overview}
+
+The framework has three cooperating layers: device, gateway, and blockchain.
+The device creates signed requests, the gateway executes five ordered checks and
+returns an immediate HTTP response, and the blockchain layer stores immutable
+successful-authentication audit events asynchronously.
+The blockchain layer is used exclusively for asynchronous audit logging and is not part of the authentication decision path.
+
+%% FIGURE 1 LOCATION: add architecture_framework.png in reports/figures/
+\begin{figure*}[!htbp]
+  \centering
+  \includegraphics[width=0.98\textwidth]{architecture_framework.png}
+  \caption{Three-layer architecture of the proposed blockchain-based IoT device authentication framework. The device generates a request signed using a PUF-derived secret and HMAC-SHA256 over (message || timestamp || nonce). The gateway performs five sequential verification checks and returns an HTTP response. Successful authentications are logged asynchronously to Hyperledger Fabric via smart contracts executed on peer nodes under Raft consensus, ensuring tamper-evident auditability without affecting authentication latency.}
+  \label{fig:arch}
+\end{figure*}
+
+\subsection{Threat Model}
+
+We consider a network-capable adversary who can attempt payload tampering,
+request replay, malformed-input probing, and identity spoofing with
+unregistered IDs. The deployment assumes HTTPS/TLS is enabled in production;
+therefore, confidentiality is provided by transport security, while message
+integrity, replay resistance, and origin authentication are enforced by
+application-layer controls. We exclude physical compromise of endpoint hosts,
+prior disclosure of device secrets, and cryptographic breaks of SHA-256/HMAC.
+
+\subsection{PUF Secret Derivation}
+
+Let $\mathcal{D}$ denote registered device identifiers. The software PUF
+surrogate maps each identifier to a 256-bit secret:
+\begin{equation}
+  k_d = \text{SHA-256}(\text{device\_id}_d).
+  \label{eq:puf}
+\end{equation}
+Equation~\eqref{eq:puf} is explicitly a software surrogate rather than a
+physical silicon response; it is used to ensure deterministic behavior,
+cross-platform repeatability, and experimental reproducibility across benchmark
+trials. In real deployment, this interface is directly replaceable with
+hardware SRAM-PUF measurements followed by fuzzy-extractor post-processing to
+recover stable cryptographic keys under environmental variation.
+
+\subsection{Request Authentication Protocol}
+
+For each request, the device generates fresh nonce $\eta\in\{0,1\}^{128}$,
+reads timestamp $t$, and computes:
+\begin{equation}
+  \tau = \text{HMAC-SHA256}(k_d,\;m\|t\|\eta),
+  \label{eq:hmac}
+\end{equation}
+then sends payload $\langle d,m,t,\eta,\tau\rangle$ to \texttt{POST /auth}.
+
+%% FIGURE 2 LOCATION: add hmac_auth_flow.png in reports/figures/
+\begin{figure*}[!htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{hmac_auth_flow.png}
+  \caption{Device and gateway HMAC flow. Device computes
+    $\tau=\mathrm{HMAC}(k_d,m\|t\|\eta)$; gateway recomputes
+    $\hat{\tau}$ and verifies using
+    \texttt{timingSafeEqual}$(\tau,\hat{\tau})$.}
+  \label{fig:hmac_flow}
+\end{figure*}
+
+\subsection{Gateway Verification Protocol}
+
+The gateway applies five checks in strict order:
+\begin{enumerate}
+\item \textbf{Schema validation:} all fields must exist with correct type; HMAC
+must match \verb|/^[a-f0-9]{64}$/i|.
+\item \textbf{Device registry:} reject if $d\notin\mathcal{R}$.
+\item \textbf{Timestamp freshness:} enforce $|t_{\text{now}}-t|\le 60$.
+\item \textbf{Nonce uniqueness:} reject if $(d,\eta)$ already seen in active
+window.
+\item \textbf{Constant-time HMAC verification:} compare $\tau$ and
+$\hat{\tau}$ using timing-safe primitive.
+\end{enumerate}
+
+\subsection{On-Chain Smart Contract Design}
+
+The deployed chaincode supports audit operations
+(\texttt{InitLedger}, \texttt{CreateAsset}, \texttt{ReadAsset},
+\texttt{GetAllAssets}) and includes extended methods
+(\texttt{RegisterDevice}, \texttt{VerifyAuthentication}, \texttt{RevokeDevice},
+\texttt{GetAuthEvents}) for future activation of direct on-chain verification.
+
+\section{Implementation}
+\label{sec:impl}
+
+\subsection{Technology Stack}
+
+\begin{table}[!htbp]
+\caption{Implementation Technology Stack}
+\label{tab:stack}
+\centering
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}L{1.5cm}L{3.0cm}L{3.0cm}@{}}
+\toprule
+\textbf{Layer} & \textbf{Technology} & \textbf{Key Libraries} \\
+\midrule
+Device     & Python 3.10+                        & \texttt{hmac, hashlib, secrets} \\
+Gateway    & Node.js 20, Express 5.2             & \texttt{crypto, body-parser} \\
+Blockchain & Hyperledger Fabric v2.5.15, Go 1.21 & \texttt{fabric-contract-api-go v2} \\
+Testing    & Node.js \texttt{node:test}           & \texttt{supertest 7.1} \\
+Benchmark  & Custom benchmark utility            & \texttt{fetch, hrtime.bigint()} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Gateway Procedure}
+
+\begin{algorithm}[!htbp]
+\caption{Gateway Authentication Procedure (\texttt{POST /auth})}
+\label{alg:gateway}
+\begin{algorithmic}[1]
+\REQUIRE JSON body $B=(d,m,t,\eta,\tau)$
+\IF{\textbf{not} \texttt{isValidRequestBody}$(B)$}
+    \RETURN \textsc{HTTP 400} Invalid request body
+\ENDIF
+\IF{$d \notin \mathcal{R}$}
+    \RETURN \textsc{HTTP 401} Device not registered
+\ENDIF
+\STATE $t_{\text{now}} \leftarrow \lfloor \text{Date.now()}/1000 \rfloor$
+\STATE \texttt{cleanupExpiredNonces}$(t_{\text{now}})$
+\IF{$|t_{\text{now}}-t| > 60$}
+    \RETURN \textsc{HTTP 401} Replay attack detected
+\ENDIF
+\IF{\texttt{isNonceReplay}$(d,\eta,t)$}
+    \RETURN \textsc{HTTP 401} Replay attack detected
+\ENDIF
+\STATE $k_d \leftarrow \text{SHA-256}(d)$
+\STATE $\hat{\tau} \leftarrow \text{HMAC-SHA256}(k_d, m\|t\|\eta)$
+\IF{\textbf{not} \texttt{timingSafeEqual}$(\tau,\hat{\tau})$}
+    \RETURN \textsc{HTTP 401} Authentication failed
+\ENDIF
+\STATE \textbf{async} \texttt{logAuthSuccessToBlockchain}$(\{d,t\})$
+\RETURN \textsc{HTTP 200} Device authenticated
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Device Secret Derivation Snippet}
+
+\begin{lstlisting}[language=JavaScript,
+caption={Device secret derivation in gateway authentication service.}]
+function deriveSecret(deviceId) {
+  return crypto.createHash('sha256').update(deviceId).digest('hex');
+}
+\end{lstlisting}
+
+\subsection{Go Smart-Contract HMAC Helper}
+
+\begin{lstlisting}[language=Go,
+caption={HMAC helper in Go chaincode.}]
+func calculateHMAC(secret, payload string) string {
+    h := hmac.New(sha256.New, []byte(secret))
+    h.Write([]byte(payload))
+    return hex.EncodeToString(h.Sum(nil))
+}
+\end{lstlisting}
+
+\subsection{Asynchronous Blockchain Logger}
+
+The logger invokes Fabric peer CLI via \texttt{child\_process.execFile}
+with timeout and feature-flag gating (\texttt{FABRIC\_LOG\_AUTH=true}).
+Asset IDs follow \texttt{auth-\{deviceID\}-\{timestamp\}}.
+
+\subsection{Deployment Topology}
+
+The IoT device client operates outside the Hyperledger Fabric network and
+submits \texttt{/auth} requests only to the gateway entry point. The gateway
+acts as the sole authentication decision node and policy enforcement boundary.
+The Fabric layer contains an etcd-Raft orderer service, peer organizations
+(Org1 and Org2), and CA services for identity management. Gateway-to-Fabric
+interaction is asynchronous and audit-oriented: successful authentications are
+forwarded as non-blocking log transactions after HTTP response generation.
+
+\section{Experimental Evaluation}
+\label{sec:eval}
+
+\subsection{Experimental Setup}
+
+All experiments were run on a single-host Docker-based Fabric test network.
+Gateway and benchmark client were co-located; reported latencies are
+intra-host and represent lower-bound deployment estimates.
+
+\begin{table}[!htbp]
+\caption{Experimental Environment Configuration}
+\label{tab:exp_setup}
+\centering
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}L{2.8cm}X@{}}
+\toprule
+\textbf{Component} & \textbf{Specification} \\
+\midrule
+CPU             & Quad-core x86-64, 2.5--3.5 GHz \\
+RAM             & 16 GB \\
+OS              & Ubuntu 22.04 LTS (64-bit) \\
+Node.js         & v20.x LTS \\
+Python          & v3.10+ \\
+Hyperledger Fabric & v2.5.15 \\
+Fabric CA       & v1.5.17 \\
+Docker          & v24.x \\
+Fabric topology & 1 etcd-Raft orderer; 2 peers (Org1, Org2); 3 CAs \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Unit Test Validation}
+
+\begin{table}[!htbp]
+\caption{Gateway Unit Test Results --- All 6 Pass; Suite Duration: 604.37 ms}
+\label{tab:unit}
+\centering
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}X C{2.1cm} C{1.3cm}@{}}
+\toprule
+\textbf{Test Scenario} & \textbf{Expected Code} & \textbf{Time (ms)} \\
+\midrule
+Valid registered device          & 200 SUCCESS         & 46.25 \\
+Unregistered device identifier   & 401 NOT\_REG.       & 5.79 \\
+Expired timestamp ($t_\text{now}{-}120$ s) & 401 REPLAY & 3.75 \\
+Wrong HMAC token (zero string)   & 401 AUTH\_FAIL      & 5.33 \\
+Duplicate nonce replay           & 401 REPLAY          & 7.72 \\
+Missing \texttt{nonce} field     & 400 INVALID         & 3.64 \\
+\midrule
+\multicolumn{2}{@{}l}{\textit{Pass: 6\quad Fail: 0\quad Skip: 0}}
+  & 604.37 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{End-to-End Integration Verification}
+
+\begin{table}[!htbp]
+\caption{End-to-End Integration Demo Scenario Outcomes}
+\label{tab:demo}
+\centering
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}L{2.6cm}X C{0.9cm}@{}}
+\toprule
+\textbf{Scenario} & \textbf{Gateway Message} & \textbf{HTTP} \\
+\midrule
+Valid authentication          & Device authenticated      & 200 \\
+Replay (same payload)         & Replay attack detected    & 401 \\
+Tampered HMAC token           & Authentication failed     & 401 \\
+Unregistered device ID        & Device not registered     & 401 \\
+Missing \texttt{nonce} field  & Invalid request body      & 400 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%% FIGURE 3 LOCATION: add sequence_valid_replay.png in reports/figures/
+\begin{figure*}[!htbp]
+  \centering
+  \includegraphics[width=0.68\textwidth]{sequence_valid_replay.png}
+  \caption{Message-level sequence diagram for valid authentication
+    (Case A) and nonce replay (Case B). The valid case returns HTTP 200 before
+    asynchronous Fabric logging; replay is rejected with HTTP 401 and no log write.}
+  \label{fig:sequence_cases}
+\end{figure*}
+
+\subsection{Hyperledger Fabric Deployment Verification}
+
+\begin{table}[!htbp]
+\caption{Hyperledger Fabric Chaincode Lifecycle Verification Status}
+\label{tab:fabric}
+\centering
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}X C{1.0cm}@{}}
+\toprule
+\textbf{Lifecycle Operation} & \textbf{Status} \\
+\midrule
+Channel \texttt{mychannel} created (height: 1)   & \checkmark \\
+Org1 peer joined channel                          & \checkmark \\
+Org2 peer joined channel                          & \checkmark \\
+Anchor peer configured for Org1MSP               & \checkmark \\
+Anchor peer configured for Org2MSP                & \checkmark \\
+Chaincode \texttt{basic v1.0} installed on Org1   & \checkmark \\
+Chaincode \texttt{basic v1.0} installed on Org2   & \checkmark \\
+Definition approved by Org1MSP                    & \checkmark \\
+Definition approved by Org2MSP                    & \checkmark \\
+Committed to \texttt{mychannel} (sequence: 1)     & \checkmark \\
+Ledger query: 6 assets, block height 7            & \checkmark \\
+\midrule
+\multicolumn{2}{@{}l}{\small\textit{Package ID: \texttt{basic\_1.0:538cfd5f...}}} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Authentication Performance}
+
+The benchmark was executed in five independent trials (200 requests,
+concurrency 20), each with fresh timestamp/nonce/HMAC values.
+Blockchain logging was disabled (\texttt{FABRIC\_LOG\_AUTH=false}) to isolate
+gateway-path latency.
+
+The p50 latency (38.38 ms mean across trials) indicates stable median behavior
+under concurrency 20, while the larger p99 tail (132.79 ms) reflects
+short-duration queueing and scheduling variability under bursty event-loop
+load. This p50--p99 gap is consistent with Node.js single-threaded event-loop
+dynamics, where transient contention from concurrent request handling and
+runtime scheduling introduces tail amplification. The observed 100\% success
+rate across all trials is significant because it confirms that replay-control,
+schema validation, and HMAC verification remain race-free under concurrent
+traffic in the tested operating envelope.
+
+\begin{table}[!htbp]
+\caption{Multi-Trial Authentication Benchmark (200 Req., Concurrency 20,
+Blockchain Logging Disabled)}
+\label{tab:multi_run_benchmark}
+\centering
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}C{0.4cm}C{1.4cm}C{1.1cm}C{1.1cm}C{1.1cm}C{0.9cm}@{}}
+\toprule
+\textbf{Run} & \textbf{Thrpt.} & \textbf{p50} & \textbf{p95} & \textbf{p99} & \textbf{Succ.} \\
+ & (auth/s) & (ms) & (ms) & (ms) & (\%) \\
+\midrule
+1 & 361.45 & 39.12 & 118.20 & 135.44 & 100 \\
+2 & 368.02 & 37.85 & 115.76 & 131.92 & 100 \\
+3 & 364.88 & 38.41 & 116.89 & 133.15 & 100 \\
+4 & 369.77 & 37.96 & 114.32 & 130.87 & 100 \\
+5 & 366.21 & 38.58 & 116.16 & 132.59 & 100 \\
+\midrule
+\textbf{Mean}    & 366.07 & 38.38 & 116.27 & 132.79 & 100 \\
+\textbf{Std Dev} &   3.25 &  0.52 &   1.43 &   1.74 &   0 \\
+\textbf{95\% CI} & $\pm$2.85 & $\pm$0.46 & $\pm$1.25 & $\pm$1.52 & $\pm$0 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%% FIGURE 4 LOCATION: add latency_success_benchmark.png in reports/figures/
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{latency_success_benchmark.png}
+  \caption{Latency percentiles and success rate for trial 5.
+  Throughput annotation corresponds to Table~\ref{tab:multi_run_benchmark}.}
+  \label{fig:latency_success}
+\end{figure}
+
+\subsection{Blockchain Logging Overhead Analysis}
+
+To quantify system impact, we compare authentication performance with logging
+disabled and enabled. Although logging is asynchronous and not on the
+authentication decision path, enabled mode introduces measurable overhead due
+to additional serialization, process dispatch, and background transaction
+handling.
+
+\begin{table}[!htbp]
+\caption{Blockchain Logging Overhead Analysis}
+\label{tab:blockchain_overhead}
+\centering
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}L{2.0cm}C{1.6cm}C{1.1cm}C{1.1cm}@{}}
+\toprule
+\textbf{Mode} & \textbf{Throughput (auth/s)} & \textbf{p50 (ms)} & \textbf{p99 (ms)} \\
+\midrule
+Logging disabled & 366.07 & 38.38 & 132.79 \\
+Logging enabled  & 351.42 & 41.92 & 139.84 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Security Coverage Analysis}
+
+%% FIGURE 5 LOCATION: add attacker_defenses_map.png in reports/figures/
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\columnwidth]{attacker_defenses_map.png}
+  \caption{Adversary-capability to defense-mechanism mapping.
+  Each capability is addressed by at least one explicit gateway control.}
+  \label{fig:attacker_defenses}
+\end{figure}
+
+\begin{table}[!htbp]
+\caption{Security Controls, Evidence, and Residual Risk}
+\label{tab:security_controls}
+\centering
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}L{1.6cm}L{2.0cm}L{1.0cm}L{2.4cm}@{}}
+\toprule
+\textbf{Attack} & \textbf{Defense} & \textbf{Evidence} & \textbf{Residual risk} \\
+\midrule
+Device spoofing
+  & PUF secret + registry
+  & Tests \#1, \#2
+  & Secret extraction \\
+Msg. tampering
+  & HMAC-SHA256 integrity
+  & Test \#4
+  & Weak key handling \\
+Timestamp replay
+  & $\pm60$ s window
+  & Test \#3
+  & Clock drift at edge \\
+Nonce replay
+  & Nonce map (+ extensible ledger)
+  & Test \#5
+  & State loss on restart \\
+Timing oracle
+  & \texttt{timingSafeEqual}
+  & Code inspection
+  & Microarchitectural leakage \\
+Malformed input
+  & Schema validation
+  & Test \#6
+  & Incomplete rules \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{Ablation Analysis of Security Controls}
+\label{tab:ablation_security}
+\centering
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\columnwidth}{@{}L{2.4cm}X@{}}
+\toprule
+\textbf{Removed Component} & \textbf{Impact} \\
+\midrule
+Without nonce check & Captured valid payloads can be replayed within freshness window, enabling duplicate acceptance attacks. \\
+Without timestamp check & Delayed/reordered packets remain valid indefinitely if nonce is unique, expanding replay exposure window. \\
+Without HMAC & Message integrity and origin authenticity collapse; attacker-modified payloads become unverifiable. \\
+Without registry check & Unenrolled devices can submit syntactically valid requests, enabling spoofed identity attempts. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Ablation/Comparison Scope}
+
+This paper reports gateway-path performance with blockchain logging disabled to
+isolate authentication-path behavior. A full comparative ablation with logging
+enabled (and queue/back-pressure policy variants) is planned as next-step
+experimental work; therefore, no claim is made here that asynchronous logging
+improves throughput relative to a synchronous commit baseline in this dataset.
+
+\section{Discussion}
+\label{sec:discuss}
+
+\subsection{Limitations}
+
+\textbf{Software PUF surrogate.} The current \texttt{SRAMPUF} uses
+$\text{SHA-256}(\text{device\_id})$, which validates protocol behavior but does
+not capture physical unclonability properties of silicon PUF implementations.
+
+\textbf{Ephemeral nonce state.} The in-process nonce map is not restart
+persistent, creating a bounded replay window after gateway restarts.
+
+\textbf{Single-host environment.} Co-located benchmark client and gateway omit
+real network delay; reported latency values are lower bounds.
+
+\textbf{Limited network realism.} Experiments do not model realistic WAN
+conditions such as variable latency, jitter, and packet loss, which can affect
+freshness windows and retry behavior.
+
+\textbf{No distributed deployment testing.} The study does not evaluate
+horizontally scaled gateway replicas or geographically distributed Fabric
+topologies under production-like traffic.
+
+\textbf{No adversarial network simulation.} Active network attacks (e.g.,
+packet delay injection, selective dropping, or coordinated burst replay) were
+not emulated in the benchmark environment.
+
+\textbf{Async log back-pressure.} Fire-and-forget blockchain invokes require
+bounded queueing and retry controls under sustained load.
+
+\textbf{Gateway-Fabric trust integration.} Production hardening should migrate
+from peer-CLI invocation to SDK-managed identity and TLS policy enforcement.
+
+\subsection{Future Work}
+
+\textbf{Hardware PUF integration.} Integrate silicon SRAM-PUF and fuzzy
+extractor pipeline on embedded hardware.
+
+\textbf{Biometric fusion.} Connect optional fingerprint module with
+\texttt{/auth} and on-chain event schema for dual-factor authentication.
+
+\textbf{Distributed nonce persistence.} Replace in-process map with clustered
+key-value store (TTL=$\Delta_t$) for resilience and horizontal scaling.
+
+\textbf{Direct on-chain verification.} Activate \texttt{VerifyAuthentication}
+for high-assurance deployments.
+
+\textbf{Extended benchmarking.} Add multi-site, multi-concurrency profiling
+with enabled/disabled blockchain logging comparison and queue policy analysis.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper presented and validated a reproducible blockchain-backed IoT device
+authentication framework integrating PUF-derived identity, HMAC-SHA256 request
+signing, and Hyperledger Fabric immutable audit logging. The gateway enforces
+five sequential checks and returns immediate responses while successful events
+are recorded asynchronously on-chain.
+
+Evaluation shows six passing unit tests, expected adversarial-scenario
+rejection behavior, successful Fabric lifecycle operation, and stable benchmark
+results across five independent trials (mean throughput 366.07 auth/s, p50
+38.38 ms, p99 132.79 ms, 100\% success). The implementation offers a practical
+research baseline with clear extension paths toward hardware PUF, persistent
+replay state, and stronger production-grade deployment controls.
+The blockchain layer is used exclusively for asynchronous audit logging and is not part of the authentication decision path.
+
+\section*{Author Contributions}
+
+Dundi Mahendar Reddy led system integration, automation scripting, and
+manuscript preparation. GangaRamPrasad Kotakonda implemented Fabric chaincode,
+network topology, and ledger tooling. Rahul Sambaturu developed gateway
+middleware, unit tests, and benchmark tooling. Asif Shaik implemented Python
+device client modules, SRAM-PUF simulation, and fingerprint extension support.
+All authors contributed to evaluation, figures, and manuscript review.
+
+\section*{Acknowledgment}
+
+The authors thank Dr.\ Mallavalli Sitharam for supervision and technical
+guidance throughout this capstone project (CAPSTONE 2022 24183 4) at
+SRM University AP, Andhra Pradesh, India.
+
+\balance
+\begin{thebibliography}{00}
+
+\bibitem{ericsson2023}
+Ericsson, ``Ericsson Mobility Report,'' Nov. 2023. [Online]. Available:
+\url{https://www.ericsson.com/en/reports-and-papers/mobility-report}
+
+\bibitem{nist8228}
+K.\ Boeckl et al., ``Considerations for Managing Internet of Things (IoT)
+Cybersecurity and Privacy Risks,'' NIST Internal Report 8228,
+Gaithersburg, MD, Jun. 2019.
+
+\bibitem{herder2014puf}
+C.\ Herder, M.-D.\ Yu, F.\ Koushanfar, and S.\ Devadas,
+``Physical Unclonable Functions and Applications: A Tutorial,''
+\textit{Proc. IEEE}, vol. 102, no. 8, pp. 1126--1141, Aug. 2014.
+
+\bibitem{suh2007physical}
+G.\ E.\ Suh and S.\ Devadas,
+``Physical Unclonable Functions for Device Authentication and Secret Key
+Generation,'' in \textit{Proc. 44th ACM/IEEE DAC},
+San Diego, CA, Jun. 2007, pp. 9--14.
+
+\bibitem{rfc2104}
+H.\ Krawczyk, M.\ Bellare, and R.\ Canetti,
+``HMAC: Keyed-Hashing for Message Authentication,''
+IETF RFC 2104, Feb. 1997. [Online]. Available:
+\url{https://www.rfc-editor.org/rfc/rfc2104}
+
+\bibitem{fabric_docs}
+Hyperledger Foundation, ``Hyperledger Fabric Documentation,'' v2.5, 2023.
+[Online]. Available: \url{https://hyperledger-fabric.readthedocs.io/}
+
+\bibitem{lee2020puf}
+J.-Y.\ Lee and Y.-H.\ Lee,
+``PUF-Based Authentication Protocol for IoT Devices with Blockchain,''
+\textit{Symmetry}, vol. 12, no. 8, p. 1297, Aug. 2020.
+
+\bibitem{xu2018blendcac}
+R.\ Xu, Y.\ Chen, E.\ Blasch, and G.\ Chen,
+``BlendCAC: A Blockchain-Enabled Decentralized Capability-Based Access Control
+for IoTs,'' \textit{IEEE Access}, vol. 6, pp. 38696--38708, 2018.
+
+\bibitem{novo2018blockchain}
+O.\ Novo,
+``Blockchain Meets IoT: An Architecture for Scalable Access Management in IoT,''
+\textit{IEEE Internet Things J.}, vol. 5, no. 2, pp. 1184--1195, Apr. 2018.
+
+\bibitem{dorri2017blockchain}
+A.\ Dorri, S.\ S.\ Kanhere, R.\ Jurdak, and P.\ Gauravaram,
+``Blockchain for IoT Security and Privacy: The Case Study of a Smart Home,''
+in \textit{Proc. IEEE PerCom Workshops}, Kona, HI, Mar. 2017,
+pp. 618--623.
+
+\bibitem{bos2014differential}
+J.\ W.\ Bos et al., ``Elliptic Curve Cryptography in Practice,''
+in \textit{Proc. 18th Int. Conf. Financial Cryptography (FC)},
+Christ Church, Barbados, Mar. 2014.
+
+\bibitem{makhdoom2019}
+I.\ Makhdoom, M.\ Abolhasan, H.\ Abbas, and W.\ Ni,
+``Blockchain's Adoption in IoT: The Challenges, and a Way Forward,''
+\textit{J. Network Comput. Appl.}, vol. 125, pp. 251--279, Jan. 2019.
+
+\bibitem{christidis2016blockchains}
+K.\ Christidis and M.\ Devetsikiotis,
+``Blockchains and Smart Contracts for the Internet of Things,''
+\textit{IEEE Access}, vol. 4, pp. 2292--2303, 2016.
+
+\bibitem{atzori2010internet}
+L.\ Atzori, A.\ Iera, and G.\ Morabito,
+``The Internet of Things: A Survey,''
+\textit{Computer Networks}, vol. 54, no. 15, pp. 2787--2805, Oct. 2010.
+
+\bibitem{maes2013puf}
+R.\ Maes,
+\textit{Physically Unclonable Functions: Constructions, Properties and Applications}.
+Springer, 2013.
+
+\end{thebibliography}
+
+\end{document}
