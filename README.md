@@ -28,31 +28,54 @@ This repository contains the implementation used for the capstone security frame
 - Python 3.10+
 - Docker (for Fabric network)
 
-## Quick Start
+## Supervisor Demo Flow
 
-1. Install Node dependencies:
+Use this fixed flow in front of your supervisor and do not switch methods mid-run.
+
+### Step 1 (Terminal A)
 
 ```bash
+cd /workspaces/capstone_project
 npm install
+npm run fabric:ops -- up
+npm run fabric:ops -- deploy
 ```
 
-2. Set shared PUF master secret (required for secure runs):
+### Step 2 (Terminal B)
 
 ```bash
-export PUF_MASTER_SECRET="replace-with-strong-secret"
-```
-
-3. Start gateway:
-
-```bash
+cd /workspaces/capstone_project
 npm start
 ```
 
-4. Run device demo scenarios in another terminal:
+### Step 3 (Terminal C)
 
 ```bash
+cd /workspaces/capstone_project
+source .venv/bin/activate
 python device/device_client.py --demo-cases
 ```
+
+### Step 4: Optional proof commands, back in Terminal A
+
+```bash
+cd /workspaces/capstone_project
+npm run fabric:ops -- status
+npm run fabric:ops -- channel
+npm run fabric:ops -- logs
+```
+
+### Step 5: Cleanup after demo, Terminal A
+
+```bash
+cd /workspaces/capstone_project
+npm run fabric:ops -- down
+```
+
+Important:
+
+- For this demo flow, do not run bash run_iot_blockchain_flow.sh.
+- Use only the steps above, exactly in order.
 
 ## Test and Benchmark
 
@@ -69,12 +92,6 @@ npm run benchmark:auth -- --requests 200 --concurrency 20
 ```
 
 ## Full Reproducible Flow
-
-- End-to-end Fabric + gateway + device flow:
-
-```bash
-npm run fabric:iot:flow
-```
 
 - Full automation with generated outputs:
 
