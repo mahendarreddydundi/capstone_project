@@ -1,0 +1,85 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# Hyperledger Fabric
+fabric-samples-net/test-network/organizations/
+fabric-samples-net/test-network/system-genesis-block/
+fabric-samples-net/test-network/channel-artifacts/
+fabric-samples-net/test-network/*.log
+fabric-samples-net/test-network/compose/
+fabric-samples-net/.env
+.env
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# OS
+Thumbs.db
+.thumbs.db
+*.log
+
+# Test outputs and reports (keep locally, don't commit)
+reports/
+generated/
+coverage/
+.nyc_output/
+*.lcov
+gateway/server.test.js
+
+# Build artifacts
+dist/
+build/
+
+# Environment files
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
