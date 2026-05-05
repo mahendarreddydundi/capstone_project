@@ -16,7 +16,8 @@
   "description": "",
   "dependencies": {
     "body-parser": "^2.2.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "fabric-network": "^2.2.20"
   },
   "devDependencies": {
     "supertest": "^7.1.1"

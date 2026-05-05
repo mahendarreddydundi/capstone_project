@@ -10,8 +10,11 @@ const app = express()
 app.use(bodyParser.json({ limit:"16kb" }))
 
 const seenNoncesByDevice = new Map()
+const requestTimestampsByDevice = new Map()
 
 const MAX_TIME_DIFF = 60
+const RATE_LIMIT_WINDOW_SECONDS = Number(process.env.RATE_LIMIT_WINDOW_SECONDS || 60)
+const RATE_LIMIT_MAX_REQUESTS = Number(process.env.RATE_LIMIT_MAX_REQUESTS || 500)
 
 function logAuthAttempt(deviceId, timestamp, result){
     console.log(
@@ -48,6 +51,23 @@ function rememberNonce(deviceId, nonce, timestamp){
     const nextNonceMap = nonceMap || new Map()
     nextNonceMap.set(nonce, timestamp)
     seenNoncesByDevice.set(deviceId, nextNonceMap)
+}
+
+function enforcePerDeviceRateLimit(deviceId, nowInSeconds){
+    const requestTimestamps = requestTimestampsByDevice.get(deviceId) || []
+    const freshTimestamps = requestTimestamps.filter(
+        (timestamp) => nowInSeconds - timestamp < RATE_LIMIT_WINDOW_SECONDS
+    )
+
+    if(freshTimestamps.length >= RATE_LIMIT_MAX_REQUESTS){
+        requestTimestampsByDevice.set(deviceId, freshTimestamps)
+        return false
+    }
+
+    freshTimestamps.push(nowInSeconds)
+    requestTimestampsByDevice.set(deviceId, freshTimestamps)
+
+    return true
 }
 
 function isValidRequestBody(body){
@@ -118,8 +138,18 @@ app.post("/auth", (req, res) => {
         })
     }
 
-    // Step 2: replay attack protection with timestamp freshness
+    // Step 2: per-device request rate limiting
     const currentTime = Math.floor(Date.now() / 1000)
+
+    if(!enforcePerDeviceRateLimit(device_id, currentTime)){
+        logAuthAttempt(device_id, timestamp, "RATE_LIMIT_EXCEEDED")
+        return res.status(429).json({
+            status:"FAILED",
+            message:"Rate limit exceeded"
+        })
+    }
+
+    // Step 3: replay attack protection with timestamp freshness
 
     cleanupExpiredNonces(currentTime)
 
@@ -134,7 +164,7 @@ app.post("/auth", (req, res) => {
 
     }
 
-    // Step 3: reject reused nonce per device within valid window
+    // Step 4: reject reused nonce per device within valid window
     if(isNonceReplay(device_id, nonce)){
         logAuthAttempt(device_id, timestamp, "REPLAY_ATTACK_DETECTED")
         return res.status(401).json({
@@ -143,7 +173,7 @@ app.post("/auth", (req, res) => {
         })
     }
 
-    // Step 4: verify authentication
+    // Step 5: verify authentication
     const result = verifyAuthentication(req.body)
 
     if(result.success){
